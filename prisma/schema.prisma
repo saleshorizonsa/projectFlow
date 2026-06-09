@@ -1,0 +1,557 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum RoleName {
+  ADMIN
+  PROJECT_MANAGER
+  TEAM_MEMBER
+  VIEWER
+}
+
+enum ProjectStatus {
+  DRAFT
+  PLANNING
+  PREPARATION
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum LayerType {
+  PLANNING
+  PREPARATION
+  IMPLEMENTATION
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  DELAYED
+}
+
+enum GapSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GapStatus {
+  OPEN
+  INVESTIGATING
+  ACTION_PLANNED
+  IN_PROGRESS
+  CLOSED
+}
+
+enum GapActionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum NotificationType {
+  TASK_OVERDUE
+  GAP_OVERDUE
+  MILESTONE_MISSED
+  PROJECT_DELAYED
+}
+
+enum ITAssetType {
+  SERVER
+  ROUTER
+  SWITCH
+  FIREWALL
+  STORAGE
+  LAPTOP
+  DESKTOP
+  PRINTER
+  APPLICATION
+  DATABASE
+  CLOUD_SERVICE
+  OTHER
+}
+
+enum ITAssetStatus {
+  ACTIVE
+  MAINTENANCE
+  RETIRED
+  PLANNED_REPLACEMENT
+}
+
+enum ITMaintenanceStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  EXITED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  roleId        String
+  role          Role      @relation(fields: [roleId], references: [id])
+  managedProjects Project[] @relation("ProjectManager")
+  currentStateAssessments ProjectCurrentState[] @relation("CurrentStateAssessor")
+  companies     UserCompany[]
+  assignedAssets ITAsset[] @relation("AssetCustodian")
+  assignedTasks Task[]   @relation("TaskAssignee")
+  ownedGaps     Gap[]    @relation("GapOwner")
+  gapActions    GapAction[] @relation("ActionResponsible")
+  assignedMaintenance ITMaintenance[] @relation("MaintenanceResponsible")
+  notifications Notification[]
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     String?
+  updatedBy     String?
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model ITAsset {
+  id             String             @id @default(cuid())
+  assetTag       String             @unique
+  name           String
+  type           ITAssetType
+  vendor         String
+  model          String
+  location       String
+  purchaseDate   DateTime
+  lifecycleYears Int                @default(5)
+  status         ITAssetStatus      @default(ACTIVE)
+  assignedToId   String?
+  assignedTo     User?              @relation("AssetCustodian", fields: [assignedToId], references: [id], onDelete: SetNull)
+  employeeId      String?
+  employee        Employee?          @relation("EmployeeAssets", fields: [employeeId], references: [id], onDelete: SetNull)
+  notes          String?
+  companies      ITAssetCompany[]
+  maintenances   ITMaintenance[]
+  licenses       ITLicense[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  createdBy      String?
+  updatedBy      String?
+}
+
+model ITAssetCompany {
+  id        String   @id @default(cuid())
+  assetId   String
+  asset     ITAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  @@unique([assetId, companyId])
+}
+
+model ITMaintenance {
+  id              String              @id @default(cuid())
+  maintenanceId   String              @unique
+  title           String
+  description     String
+  assetId         String
+  asset           ITAsset             @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  scheduledAt     DateTime
+  durationMinutes Int
+  status          ITMaintenanceStatus @default(PLANNED)
+  responsibleId   String
+  responsible     User                @relation("MaintenanceResponsible", fields: [responsibleId], references: [id])
+  downtimeRequired Boolean            @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  createdBy       String?
+  updatedBy       String?
+}
+
+model ITLicense {
+  id          String   @id @default(cuid())
+  licenseId   String   @unique
+  name        String
+  vendor      String
+  assetId     String?
+  asset       ITAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  seats       Int      @default(1)
+  cost        Decimal  @default(0) @db.Decimal(14, 2)
+  expiryDate  DateTime
+  owner       String
+  employeeId  String?
+  employee    Employee? @relation("EmployeeLicenses", fields: [employeeId], references: [id], onDelete: SetNull)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model Employee {
+  id          String            @id @default(cuid())
+  employeeId  String            @unique
+  name        String
+  email       String?
+  phone       String?
+  department  String
+  jobTitle    String
+  location    String?
+  status      EmployeeStatus    @default(ACTIVE)
+  companies   EmployeeCompany[]
+  assets      ITAsset[]         @relation("EmployeeAssets")
+  licenses    ITLicense[]       @relation("EmployeeLicenses")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model EmployeeCompany {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+
+  @@unique([employeeId, companyId])
+}
+
+model Company {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String?
+  active      Boolean          @default(true)
+  projects    ProjectCompany[]
+  assets      ITAssetCompany[]
+  users       UserCompany[]
+  employees   EmployeeCompany[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  @@unique([userId, companyId])
+}
+
+model ProjectCompany {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  @@unique([projectId, companyId])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  projectId   String        @unique
+  name        String
+  description String
+  client      String
+  startDate   DateTime
+  endDate     DateTime
+  status      ProjectStatus @default(DRAFT)
+  priority    Priority      @default(MEDIUM)
+  budget      Decimal       @db.Decimal(14, 2)
+  managerId   String
+  manager     User          @relation("ProjectManager", fields: [managerId], references: [id])
+  companies   ProjectCompany[]
+  currentState ProjectCurrentState?
+  layers      ProjectLayer[]
+  tasks       Task[]
+  milestones  Milestone[]
+  gaps        Gap[]
+  comments    Comment[]
+  attachments Attachment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model ProjectCurrentState {
+  id             String   @id @default(cuid())
+  projectId      String   @unique
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  summary        String
+  currentProcess String
+  tools          String
+  resources      String
+  painPoints     String
+  risks          String
+  constraints    String
+  assessmentDate DateTime
+  assessedById   String
+  assessedBy     User     @relation("CurrentStateAssessor", fields: [assessedById], references: [id])
+  confidenceLevel Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+}
+
+model ProjectLayer {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        LayerType
+  name        String
+  completion  Int        @default(0)
+  subLayers   SubLayer[]
+  tasks       Task[]
+  gaps        Gap[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  createdBy   String?
+  updatedBy   String?
+
+  @@unique([projectId, type])
+}
+
+model SubLayer {
+  id        String       @id @default(cuid())
+  layerId   String
+  layer     ProjectLayer @relation(fields: [layerId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int
+  tasks     Task[]
+  gaps      Gap[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  @@unique([layerId, name])
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  title          String
+  description    String
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  layerId        String
+  layer          ProjectLayer @relation(fields: [layerId], references: [id])
+  subLayerId     String
+  subLayer       SubLayer     @relation(fields: [subLayerId], references: [id])
+  priority       Priority     @default(MEDIUM)
+  assigneeId     String
+  assignee       User         @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  dueDate        DateTime
+  estimatedHours Decimal      @db.Decimal(8, 2)
+  actualHours    Decimal      @default(0) @db.Decimal(8, 2)
+  status         TaskStatus   @default(NOT_STARTED)
+  comments       Comment[]
+  attachments    Attachment[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  createdBy      String?
+  updatedBy      String?
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  name        String
+  description String
+  dueDate     DateTime
+  completion  Int             @default(0)
+  status      MilestoneStatus @default(UPCOMING)
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model Gap {
+  id                String      @id @default(cuid())
+  gapId             String      @unique
+  title             String
+  description       String
+  projectId         String
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  layerId           String
+  layer             ProjectLayer @relation(fields: [layerId], references: [id])
+  subLayerId        String?
+  subLayer          SubLayer?    @relation(fields: [subLayerId], references: [id])
+  severity          GapSeverity @default(MEDIUM)
+  impact            String
+  rootCause         String
+  ownerId           String
+  owner             User        @relation("GapOwner", fields: [ownerId], references: [id])
+  targetClosureDate DateTime
+  status            GapStatus   @default(OPEN)
+  actions           GapAction[]
+  comments          Comment[]
+  attachments       Attachment[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  createdBy         String?
+  updatedBy         String?
+}
+
+model GapAction {
+  id                String          @id @default(cuid())
+  actionId          String          @unique
+  gapId             String
+  gap               Gap             @relation(fields: [gapId], references: [id], onDelete: Cascade)
+  correctiveAction  String
+  responsibleId     String
+  responsiblePerson User            @relation("ActionResponsible", fields: [responsibleId], references: [id])
+  dueDate           DateTime
+  status            GapActionStatus @default(PLANNED)
+  progress          Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdBy         String?
+  updatedBy         String?
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  createdBy String?
+  updatedBy String?
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  authorId  String
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  gapId     String?
+  gap       Gap?     @relation(fields: [gapId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  mimeType  String
+  size      Int
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  gapId     String?
+  gap       Gap?     @relation(fields: [gapId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

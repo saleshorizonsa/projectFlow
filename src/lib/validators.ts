@@ -1,0 +1,153 @@
+import { z } from "zod";
+
+export const projectSchema = z.object({
+  projectId: z.string().min(3),
+  name: z.string().min(3),
+  description: z.string().min(10),
+  client: z.string().optional().default(""),
+  companyIds: z.array(z.string().min(1)).min(1, "Select at least one company"),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  status: z.enum(["DRAFT", "PLANNING", "PREPARATION", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  budget: z.coerce.number().nonnegative(),
+  managerId: z.string().min(1),
+});
+
+export const projectUpdateSchema = projectSchema.partial().omit({ managerId: true }).extend({
+  managerId: z.string().min(1).optional(),
+});
+
+export const companySchema = z.object({
+  code: z.string().min(2).max(20),
+  name: z.string().min(2),
+  description: z.string().optional(),
+  active: z.coerce.boolean().default(true),
+});
+
+export const companyUpdateSchema = companySchema.partial();
+
+export const employeeSchema = z.object({
+  employeeId: z.string().min(2),
+  name: z.string().min(2),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  department: z.string().min(1),
+  jobTitle: z.string().min(1),
+  location: z.string().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "EXITED"]),
+  companyIds: z.array(z.string().min(1)).min(1, "Select at least one company"),
+});
+
+export const employeeUpdateSchema = employeeSchema.partial();
+
+export const projectCurrentStateSchema = z.object({
+  summary: z.string().min(10),
+  currentProcess: z.string().min(10),
+  tools: z.string().min(1),
+  resources: z.string().min(1),
+  painPoints: z.string().min(5),
+  risks: z.string().min(5),
+  constraints: z.string().min(5),
+  assessmentDate: z.coerce.date(),
+  assessedById: z.string().min(1),
+  confidenceLevel: z.coerce.number().int().min(1).max(5),
+});
+
+export const taskSchema = z.object({
+  title: z.string().min(3),
+  description: z.string().min(5),
+  projectId: z.string().min(1),
+  layerId: z.string().min(1),
+  subLayerId: z.string().min(1),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  assigneeId: z.string().min(1),
+  dueDate: z.coerce.date(),
+  estimatedHours: z.coerce.number().positive(),
+  actualHours: z.coerce.number().nonnegative().default(0),
+  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"]),
+});
+
+export const taskUpdateSchema = taskSchema.partial();
+
+export const gapSchema = z.object({
+  gapId: z.string().min(3),
+  title: z.string().min(3),
+  description: z.string().min(10),
+  projectId: z.string().min(1),
+  layerId: z.string().min(1),
+  subLayerId: z.string().optional(),
+  severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  impact: z.string().optional(),
+  rootCause: z.string().min(5),
+  ownerId: z.string().min(1),
+  targetClosureDate: z.coerce.date(),
+  status: z.enum(["OPEN", "INVESTIGATING", "ACTION_PLANNED", "IN_PROGRESS", "CLOSED"]),
+});
+
+export const gapUpdateSchema = gapSchema.partial();
+
+export const gapActionSchema = z.object({
+  actionId: z.string().min(3),
+  gapId: z.string().min(1),
+  correctiveAction: z.string().min(5),
+  responsibleId: z.string().min(1),
+  dueDate: z.coerce.date(),
+  status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED"]),
+  progress: z.coerce.number().int().min(0).max(100),
+});
+
+export const gapActionUpdateSchema = gapActionSchema.partial();
+
+export const teamMemberSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum(["ADMIN", "PROJECT_MANAGER", "TEAM_MEMBER", "VIEWER"]),
+  companyIds: z.array(z.string().min(1)).default([]),
+});
+
+export const teamMemberUpdateSchema = teamMemberSchema.partial().extend({
+  password: z.string().min(8).optional().or(z.literal("")),
+});
+
+export const itAssetSchema = z.object({
+  assetTag: z.string().min(2),
+  name: z.string().min(2),
+  companyIds: z.array(z.string().min(1)).min(1, "Select at least one company"),
+  type: z.enum(["SERVER", "ROUTER", "SWITCH", "FIREWALL", "STORAGE", "LAPTOP", "DESKTOP", "PRINTER", "APPLICATION", "DATABASE", "CLOUD_SERVICE", "OTHER"]),
+  vendor: z.string().min(1),
+  model: z.string().min(1),
+  location: z.string().min(1),
+  purchaseDate: z.coerce.date(),
+  lifecycleYears: z.coerce.number().int().min(1).max(20),
+  status: z.enum(["ACTIVE", "MAINTENANCE", "RETIRED", "PLANNED_REPLACEMENT"]),
+  assignedToId: z.string().optional(),
+  employeeId: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const itMaintenanceSchema = z.object({
+  maintenanceId: z.string().min(2),
+  title: z.string().min(3),
+  description: z.string().min(5),
+  assetId: z.string().min(1),
+  scheduledAt: z.coerce.date(),
+  durationMinutes: z.coerce.number().int().min(15).max(10080),
+  status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+  responsibleId: z.string().min(1),
+  downtimeRequired: z.coerce.boolean().default(false),
+});
+
+export const itLicenseSchema = z.object({
+  licenseId: z.string().min(2),
+  name: z.string().min(2),
+  vendor: z.string().min(1),
+  assetId: z.string().optional(),
+  seats: z.coerce.number().int().min(1),
+  cost: z.coerce.number().nonnegative(),
+  expiryDate: z.coerce.date(),
+  owner: z.string().min(1),
+  employeeId: z.string().optional(),
+  notes: z.string().optional(),
+});
