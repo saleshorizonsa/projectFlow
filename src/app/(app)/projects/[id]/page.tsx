@@ -142,14 +142,16 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           <CommentSection
             entityType="project"
             entityId={project.id}
-            currentUserId={session!.user.id}
-            currentUserRole={session!.user.role ?? "VIEWER"}
-            initialComments={comments.map((c) => ({
-              id: c.id,
-              body: c.body,
-              createdAt: c.createdAt.toISOString(),
-              author: { id: c.author.id, name: c.author.name, image: c.author.image ?? null },
-            }))}
+            currentUserId={session?.user.id ?? ""}
+            currentUserRole={session?.user.role ?? "VIEWER"}
+            initialComments={comments
+              .filter((c) => c.author != null)
+              .map((c) => ({
+                id: c.id,
+                body: c.body,
+                createdAt: c.createdAt.toISOString(),
+                author: { id: c.author.id, name: c.author.name, image: c.author.image ?? null },
+              }))}
           />
         </CardContent>
       </Card>
