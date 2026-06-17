@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, ShieldAlert, TriangleAlert, FileText, Users } from "lucide-react";
+import { BarChart2, BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, ShieldAlert, TriangleAlert, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ const navSections = [
   {
     label: "Results",
     items: [
-      { href: "/reports", label: "Reports & Results", icon: FileText },
+      { href: "/reports", label: "Reports & Analytics", icon: BarChart2 },
       { href: "/notifications", label: "Feedback Alerts", icon: Bell },
     ],
   },
