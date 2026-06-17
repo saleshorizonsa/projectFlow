@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BarChart3, Bell, Bot, Building2, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, ShieldAlert, TriangleAlert, FileText, Users } from "lucide-react";
+import { BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, ShieldAlert, TriangleAlert, FileText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ const navSections = [
     label: "Control",
     items: [
       { href: "/dashboard", label: "Command Center", icon: Gauge },
+      { href: "/calendar", label: "IT Operations Calendar", icon: Calendar },
       { href: "/automation", label: "Automation Center", icon: Bot },
       { href: "/resources", label: "Resource Allocation", icon: Users },
     ],
