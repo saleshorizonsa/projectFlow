@@ -8,3 +8,5 @@ outputs/
 *.log
 PEGMS-server-controls/
 PEGMS-server-controls.zip
+
+.vercel
