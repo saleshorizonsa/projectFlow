@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { calculateSla } from "@/lib/sla";
@@ -27,7 +28,19 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const payload = await request.json().catch(() => null) as WhatsAppWebhook | null;
+  const rawBody = await request.text();
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (appSecret) {
+    const sig = request.headers.get("x-hub-signature-256") ?? "";
+    const expected = `sha256=${createHmac("sha256", appSecret).update(rawBody).digest("hex")}`;
+    const sigBuf = Buffer.from(sig.padEnd(expected.length));
+    const expBuf = Buffer.from(expected);
+    if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+
+  const payload = JSON.parse(rawBody || "null") as WhatsAppWebhook | null;
   const messages = payload?.entry?.flatMap((entry) => entry.changes ?? []).flatMap((change) => change.value?.messages ?? []) ?? [];
   const contacts = payload?.entry?.flatMap((entry) => entry.changes ?? []).flatMap((change) => change.value?.contacts ?? []) ?? [];
 

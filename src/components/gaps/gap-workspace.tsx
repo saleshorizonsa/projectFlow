@@ -1,14 +1,18 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, MessageSquare, Paperclip } from "lucide-react";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { AttachmentSection } from "@/components/attachments/attachment-section";
+import { CommentSection } from "@/components/comments/comment-section";
 import { GapEditDialog, type EditableGap } from "@/components/gaps/gap-edit-dialog";
 import { GapActionEditDialog, type EditableGapAction } from "@/components/gaps/gap-action-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatEnum, trafficLight } from "@/lib/utils";
 
@@ -29,7 +33,7 @@ type Gap = EditableGap & {
   actions: EditableGapAction[];
 };
 
-export function GapWorkspace({ gaps }: { gaps: Gap[] }) {
+export function GapWorkspace({ gaps, currentUserId, currentUserRole }: { gaps: Gap[]; currentUserId: string; currentUserRole: string }) {
   const router = useRouter();
   const open = gaps.filter((gap) => gap.status !== "CLOSED").length;
   const critical = gaps.filter((gap) => gap.severity === "CRITICAL" && gap.status !== "CLOSED").length;
@@ -63,33 +67,13 @@ export function GapWorkspace({ gaps }: { gaps: Gap[] }) {
         </TabsList>
         <TabsContent value="register" className="grid gap-4 xl:grid-cols-2">
           {gaps.map((gap) => (
-            <Card key={gap.id}>
-              <CardHeader className="flex flex-row items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <CardTitle>{gap.gapId}: {gap.title}</CardTitle>
-                  <div className="mt-1 text-sm text-muted-foreground">{gap.project.name} / {gap.layer.name}</div>
-                  {gap.project.companies && gap.project.companies.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {gap.project.companies.map((company) => <Badge key={company.id} variant="outline">{company.code}</Badge>)}
-                    </div>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={gap.severity === "CRITICAL" ? "destructive" : "warning"}>{formatEnum(gap.severity)}</Badge>
-                  <GapEditDialog gap={gap} compact />
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => deleteGap(gap)} aria-label="Delete gap"><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <p>{gap.description}</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Info label="Impact" value={gap.impact} />
-                  <Info label="Root Cause" value={gap.rootCause} />
-                  <Info label="Owner" value={gap.owner.name} />
-                  <Info label="Target Closure" value={new Date(gap.targetClosureDate).toLocaleDateString()} />
-                </div>
-              </CardContent>
-            </Card>
+            <GapCard
+              key={gap.id}
+              gap={gap}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              onDelete={() => deleteGap(gap)}
+            />
           ))}
         </TabsContent>
         <TabsContent value="actions" className="space-y-4">
@@ -117,6 +101,72 @@ export function GapWorkspace({ gaps }: { gaps: Gap[] }) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function GapCard({ gap, currentUserId, currentUserRole, onDelete }: {
+  gap: Gap;
+  currentUserId: string;
+  currentUserRole: string;
+  onDelete: () => void;
+}) {
+  const [showComments, setShowComments] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
+  const canDelete = ["ADMIN", "PROJECT_MANAGER"].includes(currentUserRole);
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <div className="min-w-0">
+          <CardTitle>{gap.gapId}: {gap.title}</CardTitle>
+          <div className="mt-1 text-sm text-muted-foreground">{gap.project.name} / {gap.layer.name}</div>
+          {gap.project.companies && gap.project.companies.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {gap.project.companies.map((company) => <Badge key={company.id} variant="outline">{company.code}</Badge>)}
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant={gap.severity === "CRITICAL" ? "destructive" : "warning"}>{formatEnum(gap.severity)}</Badge>
+          <GapEditDialog gap={gap} compact />
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onDelete} aria-label="Delete gap"><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p>{gap.description}</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Info label="Impact" value={gap.impact} />
+          <Info label="Root Cause" value={gap.rootCause} />
+          <Info label="Owner" value={gap.owner.name} />
+          <Info label="Target Closure" value={new Date(gap.targetClosureDate).toLocaleDateString()} />
+        </div>
+        <Separator />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setShowComments((v) => !v)}>
+            <MessageSquare className="h-3.5 w-3.5" />
+            {showComments ? "Hide comments" : "Show comments"}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setShowAttachments((v) => !v)}>
+            <Paperclip className="h-3.5 w-3.5" />
+            {showAttachments ? "Hide attachments" : "Show attachments"}
+          </Button>
+        </div>
+        {showComments && (
+          <CommentSection
+            entityType="gap"
+            entityId={gap.id}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+          />
+        )}
+        {showAttachments && (
+          <AttachmentSection
+            entityType="gap"
+            entityId={gap.id}
+            canDelete={canDelete}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

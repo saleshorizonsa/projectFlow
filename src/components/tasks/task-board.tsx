@@ -27,7 +27,7 @@ type Task = EditableTask & {
 
 const statuses = ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"];
 
-export function TaskBoard({ tasks }: { tasks: Task[] }) {
+export function TaskBoard({ tasks, currentUserId = "", currentUserRole = "VIEWER" }: { tasks: Task[]; currentUserId?: string; currentUserRole?: string }) {
   const router = useRouter();
   async function deleteTask(task: Task) {
     if (!window.confirm(`Delete task "${task.title}"?`)) return;
@@ -55,7 +55,7 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 truncate text-sm font-medium">{task.title}</div>
                       <div className="flex shrink-0 gap-1">
-                        <TaskEditDialog task={task} compact />
+                        <TaskEditDialog task={task} compact currentUserId={currentUserId} currentUserRole={currentUserRole} />
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task)} aria-label="Delete task"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
@@ -77,19 +77,19 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
         </div>
       </TabsContent>
       <TabsContent value="list">
-        <Card><CardContent className="space-y-3 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} />)}</CardContent></Card>
+        <Card><CardContent className="space-y-3 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
       <TabsContent value="calendar">
-        <Card><CardContent className="grid gap-3 pt-5 md:grid-cols-2 xl:grid-cols-3">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} />)}</CardContent></Card>
+        <Card><CardContent className="grid gap-3 pt-5 md:grid-cols-2 xl:grid-cols-3">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
       <TabsContent value="gantt">
-        <Card><CardContent className="space-y-4 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} gantt onDelete={deleteTask} />)}</CardContent></Card>
+        <Card><CardContent className="space-y-4 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} gantt onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
     </Tabs>
   );
 }
 
-function TaskLine({ task, gantt = false, onDelete }: { task: Task; gantt?: boolean; onDelete: (task: Task) => void }) {
+function TaskLine({ task, gantt = false, onDelete, currentUserId, currentUserRole }: { task: Task; gantt?: boolean; onDelete: (task: Task) => void; currentUserId?: string; currentUserRole?: string }) {
   const light = trafficLight(task.dueDate, task.status);
   return (
     <div className="rounded-md border p-3">
@@ -107,7 +107,7 @@ function TaskLine({ task, gantt = false, onDelete }: { task: Task; gantt?: boole
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant={light === "red" ? "destructive" : light === "yellow" ? "warning" : "success"}>{formatEnum(task.status)}</Badge>
-          <TaskEditDialog task={task} compact />
+          <TaskEditDialog task={task} compact currentUserId={currentUserId ?? ""} currentUserRole={currentUserRole ?? "VIEWER"} />
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDelete(task)} aria-label="Delete task"><Trash2 className="h-4 w-4" /></Button>
         </div>
       </div>

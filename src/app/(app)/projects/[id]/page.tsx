@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarClock, ClipboardList, Flag, TriangleAlert } from "lucide-react";
+import { AttachmentSection } from "@/components/attachments/attachment-section";
+import { CommentSection } from "@/components/comments/comment-section";
+import { MilestonePanel, type MilestoneRow } from "@/components/milestones/milestone-panel";
 import { ProjectCurrentStateForm } from "@/components/projects/project-current-state-form";
 import { ProjectEditDialog } from "@/components/projects/project-edit-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -31,9 +34,14 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   });
 
   if (!project) notFound();
-  const [users, companies] = await Promise.all([
+  const [users, companies, comments] = await Promise.all([
     getPrisma().user.findMany({ orderBy: { name: "asc" } }),
     getPrisma().company.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    getPrisma().comment.findMany({
+      where: { projectId: id },
+      include: { author: { select: { id: true, name: true, image: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const averageCompletion = Math.round(project.layers.reduce((sum, layer) => sum + layer.completion, 0) / Math.max(project.layers.length, 1));
@@ -77,7 +85,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         <Metric title="Overall Progress" value={`${averageCompletion}%`} icon={Flag} />
         <Metric title="Tasks" value={project.tasks.length.toString()} icon={ClipboardList} />
         <Metric title="Open Gaps" value={project.gaps.filter((gap) => gap.status !== "CLOSED").length.toString()} icon={TriangleAlert} />
-        <Metric title="Milestones" value={project.milestones.length.toString()} icon={CalendarClock} />
+        <Metric title="Milestones" value={`${project.milestones.filter((m) => m.status === "COMPLETED").length}/${project.milestones.length}`} icon={CalendarClock} />
       </section>
 
       <Card id="requirements" className="scroll-mt-20">
@@ -126,6 +134,57 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           <div className="xl:col-span-3"><CurrentStateSummary currentState={project.currentState} /></div>
         )}
       </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+      <Card>
+        <CardHeader><CardTitle>Discussion</CardTitle></CardHeader>
+        <CardContent>
+          <CommentSection
+            entityType="project"
+            entityId={project.id}
+            currentUserId={session!.user.id}
+            currentUserRole={session!.user.role ?? "VIEWER"}
+            initialComments={comments.map((c) => ({
+              id: c.id,
+              body: c.body,
+              createdAt: c.createdAt.toISOString(),
+              author: { id: c.author.id, name: c.author.name, image: c.author.image ?? null },
+            }))}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Attachments</CardTitle></CardHeader>
+        <CardContent>
+          <AttachmentSection
+            entityType="project"
+            entityId={project.id}
+            canDelete={["ADMIN", "PROJECT_MANAGER"].includes(session?.user.role ?? "")}
+          />
+        </CardContent>
+      </Card>
+      </section>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle>Milestones</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MilestonePanel
+            projectId={project.id}
+            milestones={project.milestones.map((m): MilestoneRow => ({
+              id: m.id,
+              name: m.name,
+              description: m.description,
+              dueDate: m.dueDate.toISOString(),
+              completion: m.completion,
+              status: m.status as MilestoneRow["status"],
+            }))}
+            canEdit={["ADMIN", "PROJECT_MANAGER"].includes(session?.user.role ?? "")}
+          />
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>

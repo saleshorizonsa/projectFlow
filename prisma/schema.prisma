@@ -198,6 +198,7 @@ model User {
   assignedMaintenance     ITMaintenance[]       @relation("MaintenanceResponsible")
   assignedSupportTickets  SupportTicket[]       @relation("SupportTicketAssignee")
   supportTicketEvents     SupportTicketEvent[]  @relation("SupportTicketEventAuthor")
+  comments                Comment[]             @relation("CommentAuthor")
   resourceAllocations     ResourceAllocation[]  @relation("ResourceAllocationUser")
   notifications           Notification[]
   alertDeliveries         AlertDelivery[]
@@ -244,6 +245,9 @@ model ITAsset {
   updatedAt      DateTime         @updatedAt
   createdBy      String?
   updatedBy      String?
+
+  @@index([status])
+  @@index([assignedToId])
 }
 
 model ITAssetCompany {
@@ -278,6 +282,10 @@ model ITMaintenance {
   updatedAt           DateTime             @updatedAt
   createdBy           String?
   updatedBy           String?
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([assetId])
 }
 
 model ITLicense {
@@ -299,6 +307,8 @@ model ITLicense {
   updatedAt      DateTime        @updatedAt
   createdBy      String?
   updatedBy      String?
+
+  @@index([expiryDate])
 }
 
 model Employee {
@@ -488,6 +498,11 @@ model Task {
   updatedAt           DateTime             @updatedAt
   createdBy           String?
   updatedBy           String?
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Milestone {
@@ -503,6 +518,10 @@ model Milestone {
   updatedAt   DateTime        @updatedAt
   createdBy   String?
   updatedBy   String?
+
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Gap {
@@ -530,6 +549,12 @@ model Gap {
   updatedAt         DateTime     @updatedAt
   createdBy         String?
   updatedBy         String?
+
+  @@index([projectId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([severity])
+  @@index([targetClosureDate])
 }
 
 model GapAction {
@@ -547,6 +572,11 @@ model GapAction {
   updatedAt         DateTime        @updatedAt
   createdBy         String?
   updatedBy         String?
+
+  @@index([gapId])
+  @@index([responsibleId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model ResourceAllocation {
@@ -569,6 +599,10 @@ model ResourceAllocation {
   updatedAt         DateTime                 @updatedAt
   createdBy         String?
   updatedBy         String?
+
+  @@index([userId])
+  @@index([startAt])
+  @@index([endAt])
 }
 
 model SupportTicket {
@@ -607,6 +641,12 @@ model SupportTicket {
   updatedAt          DateTime              @updatedAt
   createdBy          String?
   updatedBy          String?
+
+  @@index([companyId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([resolveDueAt])
 }
 
 model SupportTicketEvent {
@@ -638,6 +678,10 @@ model Notification {
   createdBy  String?
   updatedBy  String?
   deliveries AlertDelivery[]
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([type])
 }
 
 model AlertDelivery {
@@ -657,12 +701,17 @@ model AlertDelivery {
   updatedAt      DateTime            @updatedAt
   createdBy      String?
   updatedBy      String?
+
+  @@index([notificationId])
+  @@index([userId])
+  @@index([status])
 }
 
 model Comment {
   id              String         @id @default(cuid())
   body            String
   authorId        String
+  author          User           @relation("CommentAuthor", fields: [authorId], references: [id])
   projectId       String?
   project         Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   taskId          String?

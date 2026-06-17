@@ -51,7 +51,11 @@ export default async function TasksPage({ searchParams }: { searchParams?: Promi
           )}
         </CardHeader>
       </Card>
-      <TaskBoard tasks={taskRows} />
+      <TaskBoard
+        tasks={taskRows}
+        currentUserId={session?.user.id ?? ""}
+        currentUserRole={session?.user.role ?? "VIEWER"}
+      />
     </div>
   );
 }

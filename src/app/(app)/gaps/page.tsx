@@ -11,8 +11,7 @@ import { assetCompanyWhere, relatedProjectCompanyWhere, selectedCompanyId, type 
 import { getPrisma } from "@/lib/prisma";
 
 export default async function GapsPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
-  const session = await auth();
-  const companyId = await selectedCompanyId(searchParams);
+  const [session, companyId] = await Promise.all([auth(), selectedCompanyId(searchParams)]);
   const prisma = getPrisma();
   const [gaps, licenses] = await Promise.all([
     prisma.gap.findMany({
@@ -117,7 +116,11 @@ export default async function GapsPage({ searchParams }: { searchParams?: Promis
           </Table>
         </CardContent>
       </Card>
-      <GapWorkspace gaps={gapRows} />
+      <GapWorkspace
+        gaps={gapRows}
+        currentUserId={session?.user.id ?? ""}
+        currentUserRole={session?.user.role ?? "VIEWER"}
+      />
     </div>
   );
 }

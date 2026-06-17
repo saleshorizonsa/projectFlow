@@ -2,6 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MessageSquarePlus, Trash2 } from "lucide-react";
+import { AttachmentSection } from "@/components/attachments/attachment-section";
+import { CommentSection } from "@/components/comments/comment-section";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -64,6 +66,8 @@ export function SupportTicketDesk({
   users,
   showForm = true,
   showTickets = true,
+  currentUserId = "",
+  currentUserRole = "VIEWER",
 }: {
   tickets: Ticket[];
   companies: CompanyOption[];
@@ -73,6 +77,8 @@ export function SupportTicketDesk({
   users: Option[];
   showForm?: boolean;
   showTickets?: boolean;
+  currentUserId?: string;
+  currentUserRole?: string;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -148,7 +154,7 @@ export function SupportTicketDesk({
       </Card>}
 
       {showTickets && <div className={showForm ? "space-y-3" : "space-y-3 xl:col-span-2"}>
-        {tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} users={users} />)}
+        {tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} users={users} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}
         {tickets.length === 0 && (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">No support tickets found for this company filter.</CardContent>
@@ -159,7 +165,7 @@ export function SupportTicketDesk({
   );
 }
 
-function TicketCard({ ticket, users }: { ticket: Ticket; users: Option[] }) {
+function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket: Ticket; users: Option[]; currentUserId: string; currentUserRole: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<TicketValues["status"]>(ticket.status);
@@ -252,6 +258,17 @@ function TicketCard({ ticket, users }: { ticket: Ticket; users: Option[] }) {
             </div>
           </div>
         )}
+        <CommentSection
+          entityType="supportTicket"
+          entityId={ticket.id}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+        />
+        <AttachmentSection
+          entityType="supportTicket"
+          entityId={ticket.id}
+          canDelete={["ADMIN", "PROJECT_MANAGER"].includes(currentUserRole)}
+        />
       </CardContent>
     </Card>
   );

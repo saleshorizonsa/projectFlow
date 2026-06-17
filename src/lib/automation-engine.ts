@@ -37,8 +37,16 @@ async function syncSlaBreaches(prisma: PrismaClient, now: Date) {
     include: { assignedTo: true, company: true },
   });
 
+  const admins = await adminUsers(prisma);
+  const assigneeIds = [...new Set(tickets.map((t) => t.assignedToId).filter(Boolean) as string[])];
+  const assignees = assigneeIds.length
+    ? await prisma.user.findMany({ where: { id: { in: assigneeIds } }, select: { id: true, email: true, phone: true } })
+    : [];
+  const assigneeById = new Map(assignees.map((u) => [u.id, u]));
+
   for (const ticket of tickets) {
-    const users = await alertUsers(prisma, ticket.assignedToId);
+    const extra = ticket.assignedToId ? [assigneeById.get(ticket.assignedToId)].filter(Boolean) as typeof admins : [];
+    const users = dedupeUsers([...admins, ...extra]);
     await prisma.supportTicket.update({
       where: { id: ticket.id },
       data: { slaBreached: true, escalatedAt: ticket.escalatedAt ?? now },
@@ -61,10 +69,16 @@ async function syncLicenseRenewals(prisma: PrismaClient, now: Date) {
     include: { asset: { include: { assignedTo: true, companies: { include: { company: true } } } }, employee: true },
   });
   const admins = await adminUsers(prisma);
+  const custodianIds = [...new Set(licenses.map((l) => l.asset?.assignedToId).filter(Boolean) as string[])];
+  const custodians = custodianIds.length
+    ? await prisma.user.findMany({ where: { id: { in: custodianIds } }, select: { id: true, email: true, phone: true } })
+    : [];
+  const custodianById = new Map(custodians.map((u) => [u.id, u]));
 
   for (const license of licenses) {
     const days = differenceInCalendarDays(license.expiryDate, now);
-    const users = await uniqueUsers(prisma, admins, license.asset?.assignedToId ? [license.asset.assignedToId] : []);
+    const extra = license.asset?.assignedToId ? [custodianById.get(license.asset.assignedToId)].filter(Boolean) as typeof admins : [];
+    const users = dedupeUsers([...admins, ...extra]);
     await Promise.all(users.map((user) => createNotification(prisma, {
       user,
       type: NotificationType.LICENSE_EXPIRING,
@@ -83,10 +97,16 @@ async function syncAssetLifecycle(prisma: PrismaClient, now: Date) {
   });
   const reviewAssets = assets.filter((asset) => differenceInYears(now, asset.purchaseDate) >= asset.lifecycleYears - 1);
   const admins = await adminUsers(prisma);
+  const assetCustodianIds = [...new Set(reviewAssets.map((a) => a.assignedToId).filter(Boolean) as string[])];
+  const assetCustodians = assetCustodianIds.length
+    ? await prisma.user.findMany({ where: { id: { in: assetCustodianIds } }, select: { id: true, email: true, phone: true } })
+    : [];
+  const assetCustodianById = new Map(assetCustodians.map((u) => [u.id, u]));
 
   for (const asset of reviewAssets) {
     const age = differenceInYears(now, asset.purchaseDate);
-    const users = await uniqueUsers(prisma, admins, asset.assignedToId ? [asset.assignedToId] : []);
+    const extra = asset.assignedToId ? [assetCustodianById.get(asset.assignedToId)].filter(Boolean) as typeof admins : [];
+    const users = dedupeUsers([...admins, ...extra]);
     await Promise.all(users.map((user) => createNotification(prisma, {
       user,
       type: NotificationType.ASSET_LIFECYCLE,
@@ -142,15 +162,8 @@ async function adminUsers(prisma: PrismaClient) {
   return prisma.user.findMany({ where: { role: { name: "ADMIN" } }, select: { id: true, email: true, phone: true } });
 }
 
-async function alertUsers(prisma: PrismaClient, primaryUserId?: string | null) {
-  return uniqueUsers(prisma, await adminUsers(prisma), primaryUserId ? [primaryUserId] : []);
-}
-
-async function uniqueUsers(prisma: PrismaClient, users: Pick<User, "id" | "email" | "phone">[], ids: string[]) {
-  const extraUsers = ids.length
-    ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, email: true, phone: true } })
-    : [];
+function dedupeUsers(users: Pick<User, "id" | "email" | "phone">[]) {
   const byId = new Map<string, Pick<User, "id" | "email" | "phone">>();
-  for (const user of [...users, ...extraUsers]) byId.set(user.id, user);
+  for (const user of users) byId.set(user.id, user);
   return [...byId.values()];
 }

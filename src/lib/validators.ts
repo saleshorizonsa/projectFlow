@@ -205,3 +205,22 @@ export const resourceAllocationSchema = resourceAllocationBaseSchema.refine((val
 });
 
 export const resourceAllocationUpdateSchema = resourceAllocationBaseSchema.partial();
+
+export const milestoneSchema = z.object({
+  projectId: z.string().min(1),
+  name: z.string().min(2),
+  description: z.string().min(5),
+  dueDate: z.coerce.date(),
+  completion: z.coerce.number().int().min(0).max(100).default(0),
+  status: z.enum(["UPCOMING", "ACTIVE", "COMPLETED", "DELAYED"]),
+});
+
+export const milestoneUpdateSchema = milestoneSchema.partial().omit({ projectId: true });
+
+export const commentSchema = z.object({
+  body: z.string().min(1).max(2000),
+  projectId: z.string().optional(),
+  taskId: z.string().optional(),
+  gapId: z.string().optional(),
+  supportTicketId: z.string().optional(),
+});

@@ -1,11 +1,12 @@
 import { SupportTicketDesk } from "@/components/support/support-ticket-desk";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { assetCompanyWhere, selectedCompanyId, userCompanyWhere, type CompanySearchParams } from "@/lib/company-filter";
+import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 
 export default async function SupportTicketsPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const prisma = getPrisma();
-  const companyId = await selectedCompanyId(searchParams);
+  const [session, companyId] = await Promise.all([auth(), selectedCompanyId(searchParams)]);
   const [tickets, companies, employees, assets, licenses, users] = await Promise.all([
     prisma.supportTicket.findMany({
       where: companyId ? { companyId } : {},
@@ -78,6 +79,8 @@ export default async function SupportTicketsPage({ searchParams }: { searchParam
         licenses={licenses.map((license) => ({ id: license.id, name: license.asset ? `${license.name} / ${license.asset.assetTag}` : license.employee ? `${license.name} / ${license.employee.employeeId}` : license.name }))}
         users={users.map((user) => ({ id: user.id, name: user.name }))}
         showForm={false}
+        currentUserId={session?.user.id ?? ""}
+        currentUserRole={session?.user.role ?? "VIEWER"}
       />
     </div>
   );
