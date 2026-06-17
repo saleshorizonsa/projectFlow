@@ -54,12 +54,13 @@ export const projectCurrentStateSchema = z.object({
   confidenceLevel: z.coerce.number().int().min(1).max(5),
 });
 
-export const taskSchema = z.object({
+const taskBaseSchema = z.object({
+  taskType: z.enum(["PROJECT", "GENERAL"]).default("PROJECT"),
   title: z.string().min(3),
   description: z.string().min(5),
-  projectId: z.string().min(1),
-  layerId: z.string().min(1),
-  subLayerId: z.string().min(1),
+  projectId: z.string().optional(),
+  layerId: z.string().optional(),
+  subLayerId: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
   assigneeId: z.string().min(1),
   dueDate: z.coerce.date(),
@@ -68,7 +69,15 @@ export const taskSchema = z.object({
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"]),
 });
 
-export const taskUpdateSchema = taskSchema.partial();
+export const taskSchema = taskBaseSchema.superRefine((value, context) => {
+  if (value.taskType === "PROJECT") {
+    if (!value.projectId) context.addIssue({ code: "custom", path: ["projectId"], message: "Select a project" });
+    if (!value.layerId) context.addIssue({ code: "custom", path: ["layerId"], message: "Select a layer" });
+    if (!value.subLayerId) context.addIssue({ code: "custom", path: ["subLayerId"], message: "Select a sub layer" });
+  }
+});
+
+export const taskUpdateSchema = taskBaseSchema.partial();
 
 export const gapSchema = z.object({
   gapId: z.string().min(3),
@@ -102,6 +111,7 @@ export const gapActionUpdateSchema = gapActionSchema.partial();
 export const teamMemberSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
+  phone: z.string().optional(),
   password: z.string().min(8),
   role: z.enum(["ADMIN", "PROJECT_MANAGER", "TEAM_MEMBER", "VIEWER"]),
   companyIds: z.array(z.string().min(1)).default([]),
@@ -151,3 +161,47 @@ export const itLicenseSchema = z.object({
   employeeId: z.string().optional(),
   notes: z.string().optional(),
 });
+
+export const supportTicketSchema = z.object({
+  ticketNo: z.string().min(3).optional(),
+  title: z.string().min(3),
+  description: z.string().min(5),
+  companyId: z.string().min(1),
+  employeeId: z.string().optional(),
+  assetId: z.string().optional(),
+  licenseId: z.string().optional(),
+  category: z.enum(["HARDWARE", "SOFTWARE", "NETWORK", "ACCESS", "EMAIL", "ERP", "LICENSE", "MAINTENANCE", "OTHER"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  status: z.enum(["OPEN", "TRIAGED", "IN_PROGRESS", "WAITING_USER", "RESOLVED", "CLOSED"]).default("OPEN"),
+  source: z.enum(["PORTAL", "WHATSAPP", "PHONE", "EMAIL"]).default("PORTAL"),
+  requesterName: z.string().optional(),
+  requesterPhone: z.string().optional(),
+  assignedToId: z.string().optional(),
+});
+
+export const supportTicketUpdateSchema = supportTicketSchema.partial().extend({
+  eventBody: z.string().min(1).optional(),
+});
+
+const resourceAllocationBaseSchema = z.object({
+  userId: z.string().min(1),
+  title: z.string().min(3),
+  projectId: z.string().optional(),
+  taskId: z.string().optional(),
+  maintenanceId: z.string().optional(),
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date(),
+  allocationPercent: z.coerce.number().int().min(1).max(100).default(100),
+  status: z.enum(["PLANNED", "CONFIRMED", "COMPLETED", "CANCELLED"]).default("PLANNED"),
+  notes: z.string().optional(),
+});
+
+export const resourceAllocationSchema = resourceAllocationBaseSchema.refine((value) => value.endAt > value.startAt, {
+  message: "End time must be after start time",
+  path: ["endAt"],
+}).refine((value) => Boolean(value.projectId || value.taskId || value.maintenanceId), {
+  message: "Select a project, task, or maintenance window",
+  path: ["projectId"],
+});
+
+export const resourceAllocationUpdateSchema = resourceAllocationBaseSchema.partial();

@@ -40,6 +40,7 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
     defaultValues: {
       title: "",
       description: "",
+      taskType: "GENERAL",
       projectId: firstProject?.id ?? "",
       layerId: firstLayer?.id ?? "",
       subLayerId: firstSubLayer?.id ?? "",
@@ -53,6 +54,7 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
 
   const projectId = form.watch("projectId");
   const layerId = form.watch("layerId");
+  const taskType = form.watch("taskType");
   const selectedProject = useMemo(() => projects.find((project) => project.id === projectId), [projectId, projects]);
   const selectedLayer = useMemo(() => selectedProject?.layers.find((layer) => layer.id === layerId), [layerId, selectedProject]);
 
@@ -86,7 +88,7 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
         return;
       }
 
-      form.reset({ ...values, title: "", description: "", estimatedHours: 1, actualHours: 0, status: "NOT_STARTED" });
+      form.reset({ ...values, title: "", description: "", taskType, estimatedHours: 1, actualHours: 0, status: "NOT_STARTED" });
       setMessage("Task created and reflected in execution views.");
       router.push("/tasks");
       router.refresh();
@@ -98,6 +100,15 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
       <CardHeader><CardTitle>Create Task</CardTitle></CardHeader>
       <CardContent>
         <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <Picker
+            label="Task Type"
+            value={taskType}
+            onValueChange={(value) => form.setValue("taskType", value as TaskFormValues["taskType"])}
+            items={[
+              { value: "GENERAL", label: "General Task" },
+              { value: "PROJECT", label: "Project Task" },
+            ]}
+          />
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...form.register("title")} />
@@ -106,9 +117,13 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
             <Label htmlFor="description">Description</Label>
             <Input id="description" {...form.register("description")} />
           </div>
-          <Picker label="Project" value={projectId} onValueChange={selectProject} items={projects.map((project) => ({ value: project.id, label: project.name }))} />
-          <Picker label="Layer" value={layerId} onValueChange={selectLayer} items={(selectedProject?.layers ?? []).map((layer) => ({ value: layer.id, label: layer.name }))} />
-          <Picker label="Sub Layer" value={form.watch("subLayerId")} onValueChange={(value) => form.setValue("subLayerId", value)} items={(selectedLayer?.subLayers ?? []).map((subLayer) => ({ value: subLayer.id, label: subLayer.name }))} />
+          {taskType === "PROJECT" && (
+            <>
+              <Picker label="Project" value={projectId ?? ""} onValueChange={selectProject} items={projects.map((project) => ({ value: project.id, label: project.name }))} />
+              <Picker label="Layer" value={layerId ?? ""} onValueChange={selectLayer} items={(selectedProject?.layers ?? []).map((layer) => ({ value: layer.id, label: layer.name }))} />
+              <Picker label="Sub Layer" value={form.watch("subLayerId") ?? ""} onValueChange={(value) => form.setValue("subLayerId", value)} items={(selectedLayer?.subLayers ?? []).map((subLayer) => ({ value: subLayer.id, label: subLayer.name }))} />
+            </>
+          )}
           <Picker label="Assignee" value={form.watch("assigneeId")} onValueChange={(value) => form.setValue("assigneeId", value)} items={users.map((user) => ({ value: user.id, label: user.name }))} />
           <Picker label="Priority" value={form.watch("priority")} onValueChange={(value) => form.setValue("priority", value as TaskFormValues["priority"])} items={["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((value) => ({ value, label: value }))} />
           <Picker label="Status" value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as TaskFormValues["status"])} items={["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"].map((value) => ({ value, label: value.replaceAll("_", " ") }))} />
@@ -121,7 +136,7 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
             <Input id="estimatedHours" type="number" min="0.25" step="0.25" {...form.register("estimatedHours")} />
           </div>
           {message && <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-4">{message}</p>}
-          <Button className="md:col-span-2 xl:col-span-4" type="submit" disabled={pending || projects.length === 0 || users.length === 0}>
+          <Button className="md:col-span-2 xl:col-span-4" type="submit" disabled={pending || (taskType === "PROJECT" && projects.length === 0) || users.length === 0}>
             {pending ? "Creating..." : "Create task"}
           </Button>
         </form>

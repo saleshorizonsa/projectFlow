@@ -33,6 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     data: {
       name: payload.name,
       email: payload.email,
+      phone: payload.phone === "" ? null : payload.phone,
       passwordHash,
       roleId: role?.id,
       updatedBy: session.user.id,
@@ -50,6 +51,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     id: user.id,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     role: user.role.name,
     companies: user.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
   });

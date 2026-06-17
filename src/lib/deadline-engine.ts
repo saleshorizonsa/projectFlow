@@ -1,6 +1,6 @@
 import { addDays, differenceInCalendarDays, endOfDay, startOfDay } from "date-fns";
 import { NotificationType, type PrismaClient, type ProjectStatus } from "@prisma/client";
-import { projectCompanyWhere, relatedProjectCompanyWhere } from "@/lib/company-filter";
+import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
 
 export type HealthLevel = "green" | "yellow" | "red";
@@ -138,9 +138,12 @@ export async function getDeadlineMonitor(prisma: PrismaClient = getPrisma(), now
   const soon = endOfDay(addDays(now, 14));
   const projectWhere = projectCompanyWhere(companyId);
   const relatedProjectWhere = relatedProjectCompanyWhere(companyId);
+  const taskCompanyWhere = companyId
+    ? { OR: [relatedProjectWhere, { taskType: "GENERAL" as const, assignee: userCompanyWhere(companyId) }] }
+    : {};
   const [tasks, gaps, actions, milestones, projects] = await Promise.all([
     prisma.task.findMany({
-      where: { ...relatedProjectWhere, dueDate: { lte: soon }, status: { not: "COMPLETED" } },
+      where: { ...taskCompanyWhere, dueDate: { lte: soon }, status: { not: "COMPLETED" } },
       include: { project: true, assignee: true },
       orderBy: { dueDate: "asc" },
     }),
@@ -171,7 +174,7 @@ export async function getDeadlineMonitor(prisma: PrismaClient = getPrisma(), now
       id: task.id,
       type: "Task" as const,
       title: task.title,
-      projectName: task.project.name,
+      projectName: task.project?.name ?? "General operations",
       ownerName: task.assignee.name,
       dueDate: task.dueDate,
       status: task.status,
@@ -248,7 +251,7 @@ export async function syncDeadlineNotificationsForUser(userId: string, prisma: P
       userId,
       type: NotificationType.TASK_OVERDUE,
       title: `Task overdue: ${task.title}`,
-      message: `${task.project.name} has an overdue task due ${task.dueDate.toLocaleDateString()}.`,
+      message: `${task.project?.name ?? "General operations"} has an overdue task due ${task.dueDate.toLocaleDateString()}.`,
     })),
     ...gaps.map((gap) => ({
       userId,

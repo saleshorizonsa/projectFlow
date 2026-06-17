@@ -19,13 +19,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid task data", details: parsed.error.flatten() }, { status: 400 });
   }
   const payload = parsed.data;
-  const layer = await getPrisma().projectLayer.findFirst({
-    where: { id: payload.layerId, projectId: payload.projectId, subLayers: { some: { id: payload.subLayerId } } },
-  });
-  if (!layer) {
-    return NextResponse.json({ error: "Layer and sublayer must belong to the selected project" }, { status: 400 });
+  if (payload.taskType === "PROJECT") {
+    const layer = await getPrisma().projectLayer.findFirst({
+      where: { id: payload.layerId, projectId: payload.projectId, subLayers: { some: { id: payload.subLayerId } } },
+    });
+    if (!layer) {
+      return NextResponse.json({ error: "Layer and sublayer must belong to the selected project" }, { status: 400 });
+    }
   }
 
-  const task = await getPrisma().task.create({ data: { ...payload, createdBy: session.user.id } });
+  const task = await getPrisma().task.create({
+    data: {
+      ...payload,
+      projectId: payload.taskType === "PROJECT" ? payload.projectId : null,
+      layerId: payload.taskType === "PROJECT" ? payload.layerId : null,
+      subLayerId: payload.taskType === "PROJECT" ? payload.subLayerId : null,
+      createdBy: session.user.id,
+    },
+  });
   return NextResponse.json(task, { status: 201 });
 }

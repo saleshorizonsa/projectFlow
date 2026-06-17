@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { Building2 } from "lucide-react";
-import { CompanyForm } from "@/components/companies/company-form";
 import { CompanyTable } from "@/components/companies/company-table";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
@@ -29,11 +30,13 @@ export default async function CompaniesPage() {
             <CardTitle>Company Management</CardTitle>
             <CardDescription>Maintain group companies for shared-services projects, tasks, gaps, reports, and IT work.</CardDescription>
           </div>
-          <Building2 className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2">
+            {canManage && <Button asChild><Link href="/companies/new">Add Company</Link></Button>}
+            <Building2 className="h-5 w-5 text-primary" />
+          </div>
         </CardHeader>
         <CardContent><CompanyTable companies={companyRows} canManage={canManage} /></CardContent>
       </Card>
-      {canManage && <CompanyForm />}
     </div>
   );
 }

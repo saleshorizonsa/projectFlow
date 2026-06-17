@@ -46,7 +46,7 @@ export function EmployeeTable({ employees, companies, canManage }: { employees: 
   return (
     <Card>
       <CardContent className="pt-5">
-        <div className="hidden overflow-x-auto md:block">
+        <div className="hidden max-h-[560px] overflow-auto rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -86,7 +86,7 @@ export function EmployeeTable({ employees, companies, canManage }: { employees: 
             </TableBody>
           </Table>
         </div>
-        <div className="grid gap-3 md:hidden">
+        <div className="grid max-h-[620px] gap-3 overflow-auto pr-1 md:hidden">
           {employees.map((employee) => (
             <div key={employee.id} className="rounded-md border p-3">
               <div className="flex items-start justify-between gap-3">

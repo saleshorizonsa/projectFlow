@@ -21,6 +21,7 @@ export async function GET() {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role.name,
       assignedTasks: user._count.assignedTasks,
       gapActions: user._count.gapActions,
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     data: {
       name: payload.name,
       email: payload.email,
+      phone: payload.phone || null,
       passwordHash,
       roleId: role.id,
       createdBy: session.user.id,
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role.name,
       assignedTasks: 0,
       gapActions: 0,

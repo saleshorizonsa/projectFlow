@@ -80,7 +80,7 @@ export function ProjectForm({ managerId, companies }: { managerId: string; compa
 
   return (
     <Card>
-      <CardHeader><CardTitle>Create Project</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Create Project & Current State Shell</CardTitle></CardHeader>
       <CardContent>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           {[

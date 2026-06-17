@@ -56,7 +56,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Button asChild variant="ghost" size="sm" className="mb-2 px-0">
-            <Link href="/projects"><ArrowLeft className="h-4 w-4" /> Projects</Link>
+            <Link href="/projects"><ArrowLeft className="h-4 w-4" /> Projects & Current State</Link>
           </Button>
           <h1 className="truncate text-2xl font-semibold">{project.name}</h1>
           <p className="text-sm text-muted-foreground">{project.manager.name}</p>

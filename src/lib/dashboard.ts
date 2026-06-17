@@ -1,7 +1,8 @@
 import { addDays, endOfWeek, format, startOfDay, startOfWeek, subDays } from "date-fns";
 import { getProjectHealthSummary } from "@/lib/deadline-engine";
-import { projectCompanyWhere, relatedProjectCompanyWhere } from "@/lib/company-filter";
+import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
+import { getResourcePlanningData } from "@/lib/resource-planning";
 import { formatEnum } from "@/lib/utils";
 
 export async function getDashboardData(companyId?: string) {
@@ -11,6 +12,9 @@ export async function getDashboardData(companyId?: string) {
   const weekEnd = endOfWeek(now);
   const projectWhere = projectCompanyWhere(companyId);
   const relatedProjectWhere = relatedProjectCompanyWhere(companyId);
+  const taskCompanyWhere = companyId
+    ? { OR: [relatedProjectWhere, { taskType: "GENERAL" as const, assignee: userCompanyWhere(companyId) }] }
+    : {};
 
   const [
     totalProjects,
@@ -30,6 +34,7 @@ export async function getDashboardData(companyId?: string) {
     resourceTasks,
     gapTrendSource,
     projectHealth,
+    resourcePlanning,
   ] = await Promise.all([
     prisma.project.count({ where: projectWhere }),
     prisma.project.count({ where: { ...projectWhere, status: { in: ["PLANNING", "PREPARATION", "IN_PROGRESS"] } } }),
@@ -38,15 +43,15 @@ export async function getDashboardData(companyId?: string) {
     prisma.gap.count({ where: { ...relatedProjectWhere, status: { not: "CLOSED" } } }),
     prisma.gap.count({ where: { ...relatedProjectWhere, severity: "CRITICAL", status: { not: "CLOSED" } } }),
     prisma.milestone.count({ where: { ...relatedProjectWhere, dueDate: { gte: now, lte: addDays(now, 14) }, status: { not: "COMPLETED" } } }),
-    prisma.task.count({ where: { ...relatedProjectWhere, dueDate: { gte: weekStart, lte: weekEnd }, status: { not: "COMPLETED" } } }),
+    prisma.task.count({ where: { ...taskCompanyWhere, dueDate: { gte: weekStart, lte: weekEnd }, status: { not: "COMPLETED" } } }),
     prisma.project.findMany({ where: projectWhere, include: { layers: true, manager: true }, orderBy: { updatedAt: "desc" }, take: 5 }),
     prisma.gap.findMany({ where: relatedProjectWhere, include: { project: true, owner: true }, orderBy: [{ severity: "desc" }, { targetClosureDate: "asc" }], take: 6 }),
-    prisma.task.findMany({ where: relatedProjectWhere, include: { project: true, assignee: true }, orderBy: { dueDate: "asc" }, take: 8 }),
+    prisma.task.findMany({ where: taskCompanyWhere, include: { project: true, assignee: true }, orderBy: { dueDate: "asc" }, take: 8 }),
     prisma.milestone.findMany({ where: relatedProjectWhere, include: { project: true }, orderBy: { dueDate: "asc" }, take: 5 }),
     prisma.projectLayer.groupBy({ by: ["type"], where: relatedProjectWhere, _avg: { completion: true } }),
-    prisma.task.groupBy({ by: ["status"], where: relatedProjectWhere, _count: { _all: true } }),
+    prisma.task.groupBy({ by: ["status"], where: taskCompanyWhere, _count: { _all: true } }),
     prisma.task.findMany({
-      where: relatedProjectWhere,
+      where: taskCompanyWhere,
       select: {
         estimatedHours: true,
         actualHours: true,
@@ -59,6 +64,7 @@ export async function getDashboardData(companyId?: string) {
       orderBy: { createdAt: "asc" },
     }),
     getProjectHealthSummary(prisma, now, companyId),
+    getResourcePlanningData(companyId, prisma, now),
   ]);
 
   const lastSevenDays = Array.from({ length: 7 }, (_, index) => startOfDay(subDays(now, 6 - index)));
@@ -93,10 +99,10 @@ export async function getDashboardData(companyId?: string) {
         name: formatEnum(item.status),
         value: item._count._all,
       })),
-      resourceUtilization: Array.from(resourceMap.entries()).map(([name, hours]) => ({
-        name,
-        estimated: Math.round(hours.estimated * 10) / 10,
-        actual: Math.round(hours.actual * 10) / 10,
+      resourceUtilization: resourcePlanning.utilization.map((resource) => ({
+        name: resource.name,
+        allocated: resource.allocatedHours,
+        capacity: resource.capacityHours,
       })),
     },
     projects,
@@ -104,5 +110,6 @@ export async function getDashboardData(companyId?: string) {
     gaps,
     tasks,
     milestones,
+    resourcePlanning,
   };
 }

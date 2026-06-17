@@ -40,7 +40,7 @@ export default async function NewTaskPage({ searchParams }: { searchParams?: Pro
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Create Task</CardTitle>
-            <CardDescription>Create an accountable task linked to project layer, sub layer, assignee, priority, and deadline.</CardDescription>
+            <CardDescription>Create a general operational task or a project task with layer, sub layer, assignee, priority, and deadline.</CardDescription>
           </div>
           <Button asChild variant="outline">
             <Link href="/tasks"><ArrowLeft className="h-4 w-4" /> Back to Tasks</Link>

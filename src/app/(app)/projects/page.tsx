@@ -1,5 +1,6 @@
-import { ProjectForm } from "@/components/projects/project-form";
+import Link from "next/link";
 import { ProjectTable } from "@/components/projects/project-table";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { projectCompanyWhere, selectedCompanyId, type CompanySearchParams } from "@/lib/company-filter";
@@ -39,15 +40,15 @@ export default async function ProjectsPage({ searchParams }: { searchParams?: Pr
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Project Management</CardTitle>
-          <CardDescription>Plan, prepare, execute, and monitor accountable project delivery.</CardDescription>
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle>Projects & Current State</CardTitle>
+            <CardDescription>Plan projects, capture current state, and monitor accountable delivery readiness.</CardDescription>
+          </div>
+          {session?.user.role !== "VIEWER" && <Button asChild><Link href="/projects/new">Create Project</Link></Button>}
         </CardHeader>
         <CardContent><ProjectTable data={projectRows} companies={companies.map((company) => ({ id: company.id, name: company.name, code: company.code }))} /></CardContent>
       </Card>
-      {session?.user.role !== "VIEWER" && (
-        <ProjectForm managerId={session?.user.id ?? ""} companies={companies.map((company) => ({ id: company.id, name: company.name, code: company.code }))} />
-      )}
     </div>
   );
 }

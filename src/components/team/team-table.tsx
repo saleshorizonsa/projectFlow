@@ -20,6 +20,7 @@ export type TeamRow = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   role: string;
   assignedTasks: number;
   gapActions: number;
@@ -63,6 +64,7 @@ export function TeamTable({ users, companies, canManage }: { users: TeamRow[]; c
                   <TableCell>
                     <div className="font-medium">{user.name}</div>
                     <div className="text-xs text-muted-foreground">{user.email}</div>
+                    <div className="text-xs text-muted-foreground">{user.phone ?? "No WhatsApp phone"}</div>
                   </TableCell>
                   <TableCell><Badge variant="secondary">{formatEnum(user.role)}</Badge></TableCell>
                   <TableCell><CompanyBadges companies={user.companies} fallback="Group-wide" /></TableCell>
@@ -92,6 +94,7 @@ export function TeamTable({ users, companies, canManage }: { users: TeamRow[]; c
                 <div className="min-w-0">
                   <div className="truncate font-medium">{user.name}</div>
                   <div className="truncate text-xs text-muted-foreground">{user.email}</div>
+                  <div className="truncate text-xs text-muted-foreground">{user.phone ?? "No WhatsApp phone"}</div>
                 </div>
                 <Badge className="shrink-0" variant="secondary">{formatEnum(user.role)}</Badge>
               </div>
@@ -141,6 +144,7 @@ function TeamEditDialog({ user, companies }: { user: TeamRow; companies: Company
         body: JSON.stringify({
           name: formData.get("name"),
           email: formData.get("email"),
+          phone: formData.get("phone"),
           password: formData.get("password"),
           role,
           companyIds: selectedCompanyIds,
@@ -171,6 +175,7 @@ function TeamEditDialog({ user, companies }: { user: TeamRow; companies: Company
         <form className="grid gap-4" onSubmit={onSubmit}>
           <Field label="Name" id="name"><Input id="name" name="name" defaultValue={user.name} /></Field>
           <Field label="Email" id="email"><Input id="email" name="email" type="email" defaultValue={user.email} /></Field>
+          <Field label="WhatsApp Phone" id="phone"><Input id="phone" name="phone" placeholder="+966..." defaultValue={user.phone ?? ""} /></Field>
           <Field label="New Password" id="password"><Input id="password" name="password" type="password" placeholder="Leave blank to keep current password" /></Field>
           <div className="space-y-2">
             <Label>Role</Label>

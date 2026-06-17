@@ -26,6 +26,7 @@ export function TeamForm({ companies }: { companies: CompanyOption[] }) {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
       password: "Password123!",
       role: "TEAM_MEMBER",
       companyIds: [],
@@ -55,7 +56,7 @@ export function TeamForm({ companies }: { companies: CompanyOption[] }) {
         return;
       }
 
-      form.reset({ name: "", email: "", password: "Password123!", role: "TEAM_MEMBER", companyIds: [] });
+      form.reset({ name: "", email: "", phone: "", password: "Password123!", role: "TEAM_MEMBER", companyIds: [] });
       setMessage("Team member created and available for task assignment.");
       router.refresh();
     });
@@ -73,6 +74,10 @@ export function TeamForm({ companies }: { companies: CompanyOption[] }) {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" {...form.register("email")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">WhatsApp Phone</Label>
+            <Input id="phone" placeholder="+966..." {...form.register("phone")} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Initial Password</Label>

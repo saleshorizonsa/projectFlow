@@ -18,10 +18,11 @@ type Task = EditableTask & {
   dueDate: string;
   estimatedHours: number;
   actualHours: number;
-  project: { name: string; companies?: { id: string; name: string; code: string }[] };
+  taskType: "PROJECT" | "GENERAL";
+  project: { name: string; companies?: { id: string; name: string; code: string }[] } | null;
   assignee: { name: string };
-  layer: { name: string };
-  subLayer: { name: string };
+  layer: { name: string } | null;
+  subLayer: { name: string } | null;
 };
 
 const statuses = ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"];
@@ -58,8 +59,8 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task)} aria-label="Delete task"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{task.project.name}</div>
-                    {task.project.companies && task.project.companies.length > 0 && (
+                    <div className="mt-1 text-xs text-muted-foreground">{task.project?.name ?? "General operations"}</div>
+                    {task.project?.companies && task.project.companies.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {task.project.companies.map((company) => <Badge key={company.id} variant="outline">{company.code}</Badge>)}
                       </div>
@@ -95,8 +96,10 @@ function TaskLine({ task, gantt = false, onDelete }: { task: Task; gantt?: boole
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="font-medium">{task.title}</div>
-          <div className="text-xs text-muted-foreground">{task.layer.name} / {task.subLayer.name} / due {new Date(task.dueDate).toLocaleDateString()}</div>
-          {task.project.companies && task.project.companies.length > 0 && (
+          <div className="text-xs text-muted-foreground">
+            {task.taskType === "PROJECT" ? `${task.layer?.name ?? "Project"} / ${task.subLayer?.name ?? "Execution"}` : "General operations"} / due {new Date(task.dueDate).toLocaleDateString()}
+          </div>
+          {task.project?.companies && task.project.companies.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {task.project.companies.map((company) => <Badge key={company.id} variant="outline">{company.code}</Badge>)}
             </div>

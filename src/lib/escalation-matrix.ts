@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { NotificationType, type PrismaClient } from "@prisma/client";
-import { projectCompanyWhere, relatedProjectCompanyWhere } from "@/lib/company-filter";
+import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
 
 export type EscalationLevel = "LEVEL_1" | "LEVEL_2" | "LEVEL_3";
@@ -72,8 +72,8 @@ function daysOverdue(date: Date, now: Date) {
   return differenceInCalendarDays(startOfDay(now), startOfDay(date));
 }
 
-function uniq(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean)));
+function uniq(values: (string | null | undefined)[]) {
+  return Array.from(new Set(values.filter(Boolean) as string[]));
 }
 
 function escalationStatus(days: number): EscalationStatus {
@@ -83,6 +83,9 @@ function escalationStatus(days: number): EscalationStatus {
 export async function getEscalationMatrix(prisma: PrismaClient = getPrisma(), now = new Date(), companyId?: string) {
   const projectWhere = projectCompanyWhere(companyId);
   const relatedProjectWhere = relatedProjectCompanyWhere(companyId);
+  const taskCompanyWhere = companyId
+    ? { OR: [relatedProjectWhere, { taskType: "GENERAL" as const, assignee: userCompanyWhere(companyId) }] }
+    : {};
   const [admins, gaps, tasks, milestones, projects] = await Promise.all([
     prisma.user.findMany({ where: { role: { name: "ADMIN" } }, select: { id: true } }),
     prisma.gap.findMany({
@@ -96,7 +99,7 @@ export async function getEscalationMatrix(prisma: PrismaClient = getPrisma(), no
       orderBy: { targetClosureDate: "asc" },
     }),
     prisma.task.findMany({
-      where: { ...relatedProjectWhere, status: "BLOCKED" },
+      where: { ...taskCompanyWhere, status: "BLOCKED" },
       include: { assignee: true, project: { include: { manager: true } } },
       orderBy: { updatedAt: "asc" },
     }),
@@ -173,12 +176,12 @@ export async function getEscalationMatrix(prisma: PrismaClient = getPrisma(), no
         status: "ESCALATED",
         module: "Task",
         title: task.title,
-        projectName: task.project.name,
+        projectName: task.project?.name ?? "General operations",
         ownerName: task.assignee.name,
-        managerName: task.project.manager.name,
+        managerName: task.project?.manager.name ?? "Admin",
         daysOverdue: blockedDays,
         reason: `Task has been blocked for ${blockedDays} days.`,
-        notifyUserIds: uniq([task.assigneeId, task.project.managerId]),
+        notifyUserIds: uniq([task.assigneeId, task.project?.managerId, ...(!task.project ? adminIds : [])]),
         notificationType: NotificationType.TASK_OVERDUE,
       };
     })

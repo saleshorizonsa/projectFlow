@@ -1,5 +1,6 @@
-import { TeamForm } from "@/components/team/team-form";
+import Link from "next/link";
 import { TeamTable } from "@/components/team/team-table";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { selectedCompanyId, userCompanyWhere, type CompanySearchParams } from "@/lib/company-filter";
@@ -25,6 +26,7 @@ export default async function TeamPage({ searchParams }: { searchParams?: Promis
     id: user.id,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     role: user.role.name,
     assignedTasks: user._count.assignedTasks,
     gapActions: user._count.gapActions,
@@ -43,12 +45,14 @@ export default async function TeamPage({ searchParams }: { searchParams?: Promis
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Team Management</CardTitle>
-          <CardDescription>Create team members, assign access roles, and make users available for project accountability.</CardDescription>
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle>Team Management</CardTitle>
+            <CardDescription>Assign access roles and make users available for project, gap, support, and maintenance accountability.</CardDescription>
+          </div>
+          {session?.user.role === "ADMIN" && <Button asChild><Link href="/team/new">Add Team Member</Link></Button>}
         </CardHeader>
       </Card>
-      {session?.user.role === "ADMIN" && <TeamForm companies={companyOptions} />}
       <TeamTable users={rows} companies={companyOptions} canManage={session?.user.role === "ADMIN"} />
     </div>
   );

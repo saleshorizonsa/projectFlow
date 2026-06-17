@@ -15,12 +15,12 @@ export async function TopNav() {
   return (
     <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-3 py-2 backdrop-blur md:flex-nowrap md:px-6">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">Project Execution & Gap Management System</div>
-        <div className="truncate text-xs text-muted-foreground">Dashboard / Operational control</div>
+        <div className="truncate text-sm font-semibold">ProjectFlow</div>
+        <div className="truncate text-xs text-muted-foreground">Dashboard / Projects & Current State / Operational control</div>
       </div>
       <div className="hidden w-full max-w-sm items-center gap-2 rounded-md border bg-card px-3 md:flex">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <Input className="border-0 px-0 shadow-none focus-visible:ring-0" placeholder="Search projects, gaps, tasks" />
+        <Input className="border-0 px-0 shadow-none focus-visible:ring-0" placeholder="Search projects, current state, gaps, tasks" />
       </div>
       <div className="order-3 flex w-full items-center justify-between gap-2 md:order-none md:w-auto md:justify-end">
         <CompanyFilter companies={companies.map((company) => ({ id: company.id, name: company.name, code: company.code }))} />

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ChartPoint = { name: string; value: number };
 type TrendPoint = { name: string; opened: number; closed: number };
-type ResourcePoint = { name: string; estimated: number; actual: number };
+type ResourcePoint = { name: string; allocated: number; capacity: number };
 
 export function AnalyticsCharts({
   projectProgress,
@@ -19,7 +19,7 @@ export function AnalyticsCharts({
   resourceUtilization: ResourcePoint[];
 }) {
   return (
-    <div className="grid gap-4 2xl:grid-cols-2">
+    <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
       <ChartCard title="Project Progress">
         {projectProgress.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -68,8 +68,8 @@ export function AnalyticsCharts({
               <XAxis dataKey="name" tick={{ fontSize: 11 }} minTickGap={8} />
               <YAxis tick={{ fontSize: 11 }} width={32} />
               <Tooltip />
-              <Bar dataKey="estimated" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="actual" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="allocated" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="capacity" fill="#94a3b8" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : <EmptyChart />}
@@ -80,11 +80,11 @@ export function AnalyticsCharts({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="min-w-0">
-      <CardHeader className="pb-2">
-        <CardTitle className="truncate text-sm sm:text-base">{title}</CardTitle>
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader className="px-4 pb-2 pt-4">
+        <CardTitle className="truncate text-sm">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="h-64 min-w-0 sm:h-72">{children}</CardContent>
+      <CardContent className="h-44 min-w-0 px-3 pb-3 pt-0 sm:h-48">{children}</CardContent>
     </Card>
   );
 }
