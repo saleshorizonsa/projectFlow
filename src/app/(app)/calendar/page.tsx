@@ -34,14 +34,22 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     }),
     prisma.iTLicense.findMany({
       where: { expiryDate: { gte: rangeStart, lte: rangeEnd } },
-      include: { asset: true, employee: true },
+      select: { id: true, name: true, vendor: true, expiryDate: true },
     }),
     prisma.iTAsset.findMany({
       where: {
         status: { not: "RETIRED" },
         ...(companyId ? assetCompanyWhere(companyId) : {}),
       },
-      include: { companies: { include: { company: true } } },
+      select: {
+        id: true,
+        name: true,
+        assetTag: true,
+        purchaseDate: true,
+        lifecycleYears: true,
+        status: true,
+        companies: { select: { companyId: true } },
+      },
     }),
     prisma.milestone.findMany({
       where: {
@@ -165,7 +173,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
       isOverdue: t.status !== "COMPLETED" && isBefore(t.dueDate, now),
       isComplete: t.status === "COMPLETED",
       href: "/tasks",
-      assignedTo: t.assignee.name,
+      assignedTo: t.assignee?.name,
     });
   }
 

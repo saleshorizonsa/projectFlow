@@ -29,8 +29,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const updateData: Record<string, unknown> = {};
-    if (name) updateData.name = name.trim();
-    if (email) {
+    if (name !== undefined) updateData.name = name.trim();
+    if (email !== undefined) {
       const clash = await prisma.user.findFirst({
         where: { email: email.toLowerCase().trim(), NOT: { id } },
       });
@@ -39,7 +39,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       }
       updateData.email = email.toLowerCase().trim();
     }
-    if (roleId) updateData.roleId = roleId;
+    if (roleId !== undefined) updateData.roleId = roleId;
     if (phone !== undefined) updateData.phone = phone || null;
     if (password) updateData.passwordHash = await hash(password, 12);
     updateData.updatedBy = session.user.id;

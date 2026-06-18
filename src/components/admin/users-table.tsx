@@ -81,6 +81,7 @@ export function UsersTable({
   const [showCreate, setShowCreate] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function safeJson(res: Response, fallback: string): Promise<string> {
@@ -126,14 +127,19 @@ export function UsersTable({
 
   async function handleDelete(id: string) {
     setError(null);
-    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError(await safeJson(res, "Failed to delete user"));
-      return false;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setError(await safeJson(res, "Failed to delete user"));
+        return false;
+      }
+      startTransition(() => router.refresh());
+      setDeleteUser(null);
+      return true;
+    } finally {
+      setIsDeleting(false);
     }
-    startTransition(() => router.refresh());
-    setDeleteUser(null);
-    return true;
   }
 
   return (
@@ -300,11 +306,11 @@ export function UsersTable({
               {deleteUser.email}). This cannot be undone.
             </p>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDeleteUser(null)}>
+              <Button variant="outline" onClick={() => setDeleteUser(null)} disabled={isDeleting}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={() => handleDelete(deleteUser.id)}>
-                Delete
+              <Button variant="destructive" onClick={() => handleDelete(deleteUser.id)} disabled={isDeleting}>
+                {isDeleting ? "Deleting…" : "Delete"}
               </Button>
             </div>
           </DialogContent>

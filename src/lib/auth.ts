@@ -44,9 +44,16 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = "role" in user ? user.role : "VIEWER";
+      } else if (token.sub) {
+        // Re-verify role from DB on each token use so role changes take effect immediately
+        const dbUser = await getPrisma().user.findUnique({
+          where: { id: token.sub },
+          select: { role: { select: { name: true } } },
+        });
+        token.role = dbUser?.role.name ?? undefined;
       }
       return token;
     },
