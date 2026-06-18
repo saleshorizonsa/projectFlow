@@ -83,6 +83,15 @@ export function UsersTable({
   const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  async function safeJson(res: Response, fallback: string): Promise<string> {
+    try {
+      const j = await res.json();
+      return j.error ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   async function handleCreate(data: Record<string, unknown>) {
     setError(null);
     const res = await fetch("/api/admin/users", {
@@ -91,8 +100,7 @@ export function UsersTable({
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const j = await res.json();
-      setError(j.error ?? "Failed to create user");
+      setError(await safeJson(res, "Failed to create user"));
       return false;
     }
     startTransition(() => router.refresh());
@@ -108,8 +116,7 @@ export function UsersTable({
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const j = await res.json();
-      setError(j.error ?? "Failed to save changes");
+      setError(await safeJson(res, "Failed to save changes"));
       return false;
     }
     startTransition(() => router.refresh());
@@ -121,8 +128,7 @@ export function UsersTable({
     setError(null);
     const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      const j = await res.json();
-      setError(j.error ?? "Failed to delete user");
+      setError(await safeJson(res, "Failed to delete user"));
       return false;
     }
     startTransition(() => router.refresh());
