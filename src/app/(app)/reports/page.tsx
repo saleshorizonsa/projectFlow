@@ -90,7 +90,7 @@ export default async function ReportsPage({
       by: ["category"],
       where: ticketWhere,
       _count: { _all: true },
-      orderBy: { _count: { category: "desc" } },
+      orderBy: { category: "asc" },
     }),
 
     // byStatus
