@@ -47,13 +47,18 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.role = "role" in user ? user.role : "VIEWER";
+        token.roleCheckedAt = Date.now();
       } else if (token.sub) {
-        // Re-verify role from DB on each token use so role changes take effect immediately
-        const dbUser = await getPrisma().user.findUnique({
-          where: { id: token.sub },
-          select: { role: { select: { name: true } } },
-        });
-        token.role = dbUser?.role.name ?? undefined;
+        // Re-verify role from DB at most once every 5 minutes per session
+        const lastChecked = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
+        if (Date.now() - lastChecked > 5 * 60 * 1000) {
+          const dbUser = await getPrisma().user.findUnique({
+            where: { id: token.sub },
+            select: { role: { select: { name: true } } },
+          });
+          token.role = dbUser?.role.name ?? undefined;
+          token.roleCheckedAt = Date.now();
+        }
       }
       return token;
     },

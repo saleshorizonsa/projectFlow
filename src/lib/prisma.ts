@@ -6,7 +6,15 @@ const globalForPrisma = globalThis as unknown as {
 
 export function getPrisma() {
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient();
+    // connection_limit=1 ensures each serverless function instance holds at most
+    // one DB connection, staying within Supabase's pgBouncer pool limit.
+    const base = process.env.DATABASE_URL ?? "";
+    const url = base.includes("connection_limit")
+      ? base
+      : `${base}${base.includes("?") ? "&" : "?"}connection_limit=1`;
+    globalForPrisma.prisma = new PrismaClient({
+      datasources: { db: { url } },
+    });
   }
 
   return globalForPrisma.prisma;
