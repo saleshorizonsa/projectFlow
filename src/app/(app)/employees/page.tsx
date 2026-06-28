@@ -1,4 +1,4 @@
-import { EmployeeForm } from "@/components/employees/employee-form";
+﻿import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeTable } from "@/components/employees/employee-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,9 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     jobTitle: employee.jobTitle,
     location: employee.location,
     status: employee.status,
+    ipAddress: employee.ipAddress,
+    vpnUserId: employee.vpnUserId,
+    vpnPassword: employee.vpnPassword,
     companies: employee.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
     assets: employee.assets.map((asset) => ({ id: asset.id, assetTag: asset.assetTag, name: asset.name, type: asset.type })),
     licenses: employee.licenses.map((license) => ({ id: license.id, licenseId: license.licenseId, name: license.name, vendor: license.vendor })),
@@ -199,3 +202,4 @@ function CompanyBadges({ companies }: { companies: { id: string; name: string; c
     </div>
   );
 }
+

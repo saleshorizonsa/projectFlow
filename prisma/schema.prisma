@@ -322,6 +322,9 @@ model Employee {
   jobTitle       String
   location       String?
   status         EmployeeStatus    @default(ACTIVE)
+  ipAddress      String?
+  vpnUserId      String?
+  vpnPassword    String?
   companies      EmployeeCompany[]
   assets         ITAsset[]         @relation("EmployeeAssets")
   licenses       ITLicense[]       @relation("EmployeeLicenses")

@@ -37,6 +37,9 @@ export const employeeSchema = z.object({
   location: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "EXITED"]),
   companyIds: z.array(z.string().min(1)).min(1, "Select at least one company"),
+  ipAddress: z.string().optional(),
+  vpnUserId: z.string().optional(),
+  vpnPassword: z.string().optional(),
 });
 
 export const employeeUpdateSchema = employeeSchema.partial();

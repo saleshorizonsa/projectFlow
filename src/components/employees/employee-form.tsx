@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,9 @@ export function EmployeeForm({ companies }: { companies: CompanyOption[] }) {
       location: "",
       status: "ACTIVE",
       companyIds: [],
+      ipAddress: "",
+      vpnUserId: "",
+      vpnPassword: "",
     },
   });
   const selectedCompanyIds = form.watch("companyIds") ?? [];
@@ -54,7 +57,7 @@ export function EmployeeForm({ companies }: { companies: CompanyOption[] }) {
         setMessage(body?.error ?? "Employee could not be created.");
         return;
       }
-      form.reset({ employeeId: "", name: "", email: "", phone: "", department: "", jobTitle: "", location: "", status: "ACTIVE", companyIds: [] });
+      form.reset({ employeeId: "", name: "", email: "", phone: "", department: "", jobTitle: "", location: "", status: "ACTIVE", companyIds: [], ipAddress: "", vpnUserId: "", vpnPassword: "" });
       setMessage("Employee created. You can now assign assets and licenses from IT Maintenance.");
       router.refresh();
     });
@@ -79,6 +82,14 @@ export function EmployeeForm({ companies }: { companies: CompanyOption[] }) {
               <SelectContent>{statuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-1 md:col-span-2 xl:col-span-4">
+            <p className="text-sm font-semibold text-muted-foreground">Network / VPN Access</p>
+          </div>
+          <Field label="IP Address" id="ipAddress"><Input id="ipAddress" placeholder="192.168.1.x" {...form.register("ipAddress")} /></Field>
+          <Field label="VPN User ID" id="vpnUserId"><Input id="vpnUserId" {...form.register("vpnUserId")} /></Field>
+          <Field label="VPN Password" id="vpnPassword"><Input id="vpnPassword" type="password" {...form.register("vpnPassword")} /></Field>
+
           <div className="space-y-3 md:col-span-2 xl:col-span-4">
             <Label>Companies</Label>
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, FileText, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,9 @@ type EmployeeRow = {
   jobTitle: string;
   location: string | null;
   status: string;
+  ipAddress: string | null;
+  vpnUserId: string | null;
+  vpnPassword: string | null;
   companies: CompanyOption[];
   assets: { id: string; assetTag: string; name: string; type: string }[];
   licenses: { id: string; licenseId: string; name: string; vendor: string }[];
@@ -121,6 +124,7 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState(employee.status);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState(employee.companies.map((company) => company.id));
+  const [showVpnPassword, setShowVpnPassword] = useState(false);
 
   function toggleCompany(companyId: string, checked: boolean) {
     setSelectedCompanyIds((current) => checked ? Array.from(new Set([...current, companyId])) : current.filter((id) => id !== companyId));
@@ -130,21 +134,26 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     setMessage(null);
+    const newVpnPassword = (formData.get("vpnPassword") as string).trim();
     startTransition(async () => {
+      const payload: Record<string, unknown> = {
+        employeeId: formData.get("employeeId"),
+        name: formData.get("name"),
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        department: formData.get("department"),
+        jobTitle: formData.get("jobTitle"),
+        location: formData.get("location"),
+        ipAddress: formData.get("ipAddress"),
+        vpnUserId: formData.get("vpnUserId"),
+        status,
+        companyIds: selectedCompanyIds,
+      };
+      if (newVpnPassword) payload.vpnPassword = newVpnPassword;
       const response = await fetch(`/api/employees/${employee.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: formData.get("employeeId"),
-          name: formData.get("name"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          department: formData.get("department"),
-          jobTitle: formData.get("jobTitle"),
-          location: formData.get("location"),
-          status,
-          companyIds: selectedCompanyIds,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -159,7 +168,7 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button size="sm" variant="outline"><Pencil className="h-4 w-4" /> Edit</Button></DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
           <DialogDescription>Update employee details and company assignment.</DialogDescription>
@@ -179,6 +188,22 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
               <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatEnum(item)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-1 md:col-span-2">
+            <p className="text-sm font-semibold text-muted-foreground">Network / VPN Access</p>
+          </div>
+          <Field label="IP Address" id="ipAddress"><Input id="ipAddress" name="ipAddress" placeholder="192.168.1.x" defaultValue={employee.ipAddress ?? ""} /></Field>
+          <Field label="VPN User ID" id="vpnUserId"><Input id="vpnUserId" name="vpnUserId" defaultValue={employee.vpnUserId ?? ""} /></Field>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="vpnPassword">VPN Password</Label>
+            <div className="relative">
+              <Input id="vpnPassword" name="vpnPassword" type={showVpnPassword ? "text" : "password"} placeholder={employee.vpnPassword ? "Leave blank to keep current" : "Set VPN password"} className="pr-10" />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowVpnPassword((v) => !v)} aria-label={showVpnPassword ? "Hide password" : "Show password"}>
+                {showVpnPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-3 md:col-span-2">
             <Label>Companies</Label>
             <div className="grid gap-2 sm:grid-cols-2">
