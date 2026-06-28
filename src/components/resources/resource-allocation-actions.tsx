@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +42,8 @@ export function ResourceAllocationActions({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [form, setForm] = useState({
@@ -58,6 +61,11 @@ export function ResourceAllocationActions({
 
   function update(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+    setIsDirty(true);
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) { setDiscardOpen(true); } else { setOpen(next); }
   }
 
   async function save() {
@@ -80,6 +88,7 @@ export function ResourceAllocationActions({
         return;
       }
       setOpen(false);
+      setIsDirty(false);
       router.refresh();
     });
   }
@@ -95,35 +104,42 @@ export function ResourceAllocationActions({
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Edit allocation">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>Edit Resource Allocation</DialogTitle></DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Picker label="Resource" value={form.userId} onValueChange={(value) => update("userId", value)} items={users} />
-            <Field label="Allocation Title" id={`title-${allocation.id}`}><Input id={`title-${allocation.id}`} value={form.title} onChange={(event) => update("title", event.target.value)} /></Field>
-            <Field label="Start" id={`start-${allocation.id}`}><Input id={`start-${allocation.id}`} type="datetime-local" value={form.startAt} onChange={(event) => update("startAt", event.target.value)} /></Field>
-            <Field label="End" id={`end-${allocation.id}`}><Input id={`end-${allocation.id}`} type="datetime-local" value={form.endAt} onChange={(event) => update("endAt", event.target.value)} /></Field>
-            <Picker label="Project" value={form.projectId} onValueChange={(value) => update("projectId", value)} items={projects} includeNone />
-            <Picker label="Task" value={form.taskId} onValueChange={(value) => update("taskId", value)} items={tasks} includeNone />
-            <Picker label="Maintenance" value={form.maintenanceId} onValueChange={(value) => update("maintenanceId", value)} items={maintenances} includeNone />
-            <Field label="Allocation %" id={`percent-${allocation.id}`}><Input id={`percent-${allocation.id}`} type="number" min="1" max="100" value={form.allocationPercent} onChange={(event) => update("allocationPercent", event.target.value)} /></Field>
-            <Picker label="Status" value={form.status} onValueChange={(value) => update("status", value)} items={statuses.map((status) => ({ id: status, name: status.replaceAll("_", " ") }))} />
-            <Field label="Notes" id={`notes-${allocation.id}`}><Input id={`notes-${allocation.id}`} value={form.notes} onChange={(event) => update("notes", event.target.value)} /></Field>
-            {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
-            <Button className="md:col-span-2" onClick={save} disabled={pending}>{pending ? "Saving..." : "Save allocation"}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={remove} aria-label="Delete allocation">
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
+    <>
+      <div className="flex items-center gap-1">
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Edit allocation">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader><DialogTitle>Edit Resource Allocation</DialogTitle></DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Picker label="Resource" value={form.userId} onValueChange={(value) => update("userId", value)} items={users} />
+              <Field label="Allocation Title" id={`title-${allocation.id}`}><Input id={`title-${allocation.id}`} value={form.title} onChange={(event) => update("title", event.target.value)} /></Field>
+              <Field label="Start" id={`start-${allocation.id}`}><Input id={`start-${allocation.id}`} type="datetime-local" value={form.startAt} onChange={(event) => update("startAt", event.target.value)} /></Field>
+              <Field label="End" id={`end-${allocation.id}`}><Input id={`end-${allocation.id}`} type="datetime-local" value={form.endAt} onChange={(event) => update("endAt", event.target.value)} /></Field>
+              <Picker label="Project" value={form.projectId} onValueChange={(value) => update("projectId", value)} items={projects} includeNone />
+              <Picker label="Task" value={form.taskId} onValueChange={(value) => update("taskId", value)} items={tasks} includeNone />
+              <Picker label="Maintenance" value={form.maintenanceId} onValueChange={(value) => update("maintenanceId", value)} items={maintenances} includeNone />
+              <Field label="Allocation %" id={`percent-${allocation.id}`}><Input id={`percent-${allocation.id}`} type="number" min="1" max="100" value={form.allocationPercent} onChange={(event) => update("allocationPercent", event.target.value)} /></Field>
+              <Picker label="Status" value={form.status} onValueChange={(value) => update("status", value)} items={statuses.map((status) => ({ id: status, name: status.replaceAll("_", " ") }))} />
+              <Field label="Notes" id={`notes-${allocation.id}`}><Input id={`notes-${allocation.id}`} value={form.notes} onChange={(event) => update("notes", event.target.value)} /></Field>
+              {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
+              <Button className="md:col-span-2" onClick={save} disabled={pending}>{pending ? "Saving..." : "Save allocation"}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={remove} aria-label="Delete allocation">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
+    </>
   );
 }
 

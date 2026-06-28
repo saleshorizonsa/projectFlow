@@ -1,14 +1,15 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarClock, CheckCircle2, Clock, Pencil, Plus, Trash2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -49,10 +50,12 @@ function MilestoneForm({
   projectId,
   initial,
   onDone,
+  onDirtyChange,
 }: {
   projectId: string;
   initial?: MilestoneRow;
   onDone: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -70,6 +73,9 @@ function MilestoneForm({
         }
       : { name: "", description: "", completion: 0, status: "UPCOMING" },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   function onSubmit(values: FormValues) {
     setError(null);
@@ -149,35 +155,63 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 
 function EditDialog({ projectId, milestone }: { projectId: string; milestone: MilestoneRow }) {
   const [open, setOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) { setDiscardOpen(true); } else { setOpen(next); }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit milestone">
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Edit Milestone</DialogTitle></DialogHeader>
-        <MilestoneForm projectId={projectId} initial={milestone} onDone={() => setOpen(false)} />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit milestone">
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Milestone</DialogTitle></DialogHeader>
+          <MilestoneForm projectId={projectId} initial={milestone} onDone={() => setOpen(false)} onDirtyChange={setIsDirty} />
+        </DialogContent>
+      </Dialog>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
+    </>
   );
 }
 
 function AddDialog({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) { setDiscardOpen(true); } else { setOpen(next); }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Plus className="h-4 w-4" /> Add Milestone
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Add Milestone</DialogTitle></DialogHeader>
-        <MilestoneForm projectId={projectId} onDone={() => setOpen(false)} />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">
+            <Plus className="h-4 w-4" /> Add Milestone
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add Milestone</DialogTitle></DialogHeader>
+          <MilestoneForm projectId={projectId} onDone={() => setOpen(false)} onDirtyChange={setIsDirty} />
+        </DialogContent>
+      </Dialog>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
+    </>
   );
 }
 

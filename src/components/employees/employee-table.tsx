@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Eye, EyeOff, FileText, Pencil, Trash2 } from "lucide-react";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatEnum } from "@/lib/utils";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type CompanyOption = { id: string; name: string; code: string };
 type EmployeeRow = {
@@ -125,9 +126,17 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
   const [status, setStatus] = useState(employee.status);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState(employee.companies.map((company) => company.id));
   const [showVpnPassword, setShowVpnPassword] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  const markDirty = () => setIsDirty(true);
 
   function toggleCompany(companyId: string, checked: boolean) {
     setSelectedCompanyIds((current) => checked ? Array.from(new Set([...current, companyId])) : current.filter((id) => id !== companyId));
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) { setDiscardOpen(true); } else { setOpen(next); }
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -161,66 +170,70 @@ function EmployeeEditDialog({ employee, companies }: { employee: EmployeeRow; co
         return;
       }
       setOpen(false);
+      setIsDirty(false);
       router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm" variant="outline"><Pencil className="h-4 w-4" /> Edit</Button></DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
-          <DialogDescription>Update employee details and company assignment.</DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-          <Field label="Employee ID" id="employeeId"><Input id="employeeId" name="employeeId" defaultValue={employee.employeeId} /></Field>
-          <Field label="Name" id="name"><Input id="name" name="name" defaultValue={employee.name} /></Field>
-          <Field label="Email" id="email"><Input id="email" name="email" type="email" defaultValue={employee.email ?? ""} /></Field>
-          <Field label="Phone" id="phone"><Input id="phone" name="phone" defaultValue={employee.phone ?? ""} /></Field>
-          <Field label="Department" id="department"><Input id="department" name="department" defaultValue={employee.department} /></Field>
-          <Field label="Job Title" id="jobTitle"><Input id="jobTitle" name="jobTitle" defaultValue={employee.jobTitle} /></Field>
-          <Field label="Location" id="location"><Input id="location" name="location" defaultValue={employee.location ?? ""} /></Field>
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatEnum(item)}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1 md:col-span-2">
-            <p className="text-sm font-semibold text-muted-foreground">Network / VPN Access</p>
-          </div>
-          <Field label="IP Address" id="ipAddress"><Input id="ipAddress" name="ipAddress" placeholder="192.168.1.x" defaultValue={employee.ipAddress ?? ""} /></Field>
-          <Field label="VPN User ID" id="vpnUserId"><Input id="vpnUserId" name="vpnUserId" defaultValue={employee.vpnUserId ?? ""} /></Field>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="vpnPassword">VPN Password</Label>
-            <div className="relative">
-              <Input id="vpnPassword" name="vpnPassword" type={showVpnPassword ? "text" : "password"} placeholder={employee.vpnPassword ? "Leave blank to keep current" : "Set VPN password"} className="pr-10" />
-              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowVpnPassword((v) => !v)} aria-label={showVpnPassword ? "Hide password" : "Show password"}>
-                {showVpnPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild><Button size="sm" variant="outline"><Pencil className="h-4 w-4" /> Edit</Button></DialogTrigger>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogDescription>Update employee details and company assignment.</DialogDescription>
+          </DialogHeader>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+            <Field label="Employee ID" id="employeeId"><Input id="employeeId" name="employeeId" defaultValue={employee.employeeId} onChange={markDirty} /></Field>
+            <Field label="Name" id="name"><Input id="name" name="name" defaultValue={employee.name} onChange={markDirty} /></Field>
+            <Field label="Email" id="email"><Input id="email" name="email" type="email" defaultValue={employee.email ?? ""} onChange={markDirty} /></Field>
+            <Field label="Phone" id="phone"><Input id="phone" name="phone" defaultValue={employee.phone ?? ""} onChange={markDirty} /></Field>
+            <Field label="Department" id="department"><Input id="department" name="department" defaultValue={employee.department} onChange={markDirty} /></Field>
+            <Field label="Job Title" id="jobTitle"><Input id="jobTitle" name="jobTitle" defaultValue={employee.jobTitle} onChange={markDirty} /></Field>
+            <Field label="Location" id="location"><Input id="location" name="location" defaultValue={employee.location ?? ""} onChange={markDirty} /></Field>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(v) => { setStatus(v); setIsDirty(true); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatEnum(item)}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div className="space-y-3 md:col-span-2">
-            <Label>Companies</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {companies.map((company) => (
-                <label key={company.id} className="flex min-h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium">
-                  <input className="h-4 w-4 shrink-0 rounded border-input" type="checkbox" checked={selectedCompanyIds.includes(company.id)} onChange={(event) => toggleCompany(company.id, event.target.checked)} />
-                  <span className="min-w-0 truncate">{company.name}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">{company.code}</span>
-                </label>
-              ))}
+            <div className="space-y-1 md:col-span-2">
+              <p className="text-sm font-semibold text-muted-foreground">Network / VPN Access</p>
             </div>
-          </div>
-          {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
-          <Button className="md:col-span-2" disabled={pending}>{pending ? "Saving..." : "Save changes"}</Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <Field label="IP Address" id="ipAddress"><Input id="ipAddress" name="ipAddress" placeholder="192.168.1.x" defaultValue={employee.ipAddress ?? ""} onChange={markDirty} /></Field>
+            <Field label="VPN User ID" id="vpnUserId"><Input id="vpnUserId" name="vpnUserId" defaultValue={employee.vpnUserId ?? ""} onChange={markDirty} /></Field>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="vpnPassword">VPN Password</Label>
+              <div className="relative">
+                <Input id="vpnPassword" name="vpnPassword" type={showVpnPassword ? "text" : "password"} placeholder={employee.vpnPassword ? "Leave blank to keep current" : "Set VPN password"} className="pr-10" onChange={markDirty} />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowVpnPassword((v) => !v)} aria-label={showVpnPassword ? "Hide password" : "Show password"}>
+                  {showVpnPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3 md:col-span-2">
+              <Label>Companies</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {companies.map((company) => (
+                  <label key={company.id} className="flex min-h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium">
+                    <input className="h-4 w-4 shrink-0 rounded border-input" type="checkbox" checked={selectedCompanyIds.includes(company.id)} onChange={(event) => { toggleCompany(company.id, event.target.checked); setIsDirty(true); }} />
+                    <span className="min-w-0 truncate">{company.name}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">{company.code}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
+            <Button className="md:col-span-2" disabled={pending}>{pending ? "Saving..." : "Save changes"}</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <DiscardChangesDialog open={discardOpen} onKeep={() => setDiscardOpen(false)} onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }} />
+    </>
   );
 }
 

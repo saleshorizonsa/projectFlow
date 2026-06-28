@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
@@ -10,6 +10,7 @@ import { AttachmentSection } from "@/components/attachments/attachment-section";
 import { CommentSection } from "@/components/comments/comment-section";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +36,7 @@ const statuses: NonNullable<TaskEditValues["status"]>[] = ["NOT_STARTED", "IN_PR
 export function TaskEditDialog({ task, compact = false, currentUserId = "", currentUserRole = "VIEWER" }: { task: EditableTask; compact?: boolean; currentUserId?: string; currentUserRole?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const form = useForm<TaskEditValues>({
@@ -49,6 +51,14 @@ export function TaskEditDialog({ task, compact = false, currentUserId = "", curr
       actualHours: task.actualHours,
     },
   });
+
+  function handleOpenChange(next: boolean) {
+    if (!next && form.formState.isDirty) {
+      setDiscardOpen(true);
+    } else {
+      setOpen(next);
+    }
+  }
 
   async function onSubmit(values: TaskEditValues) {
     setMessage(null);
@@ -65,61 +75,69 @@ export function TaskEditDialog({ task, compact = false, currentUserId = "", curr
         return;
       }
 
+      form.reset(values);
       setOpen(false);
       router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size={compact ? "icon" : "sm"} variant={compact ? "ghost" : "outline"} className={compact ? "h-7 w-7" : undefined} aria-label="Edit task">
-          <Pencil className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
-          {!compact && "Edit"}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
-          <DialogDescription>Update execution status, priority, dates, and effort tracking.</DialogDescription>
-        </DialogHeader>
-        <Tabs defaultValue="edit">
-          <TabsList className="mb-2">
-            <TabsTrigger value="edit">Details</TabsTrigger>
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="attachments">Files</TabsTrigger>
-          </TabsList>
-          <TabsContent value="edit">
-            <form className="grid gap-4 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
-              <Field className="md:col-span-2" label="Title" id="title"><Input id="title" {...form.register("title")} /></Field>
-              <Field className="md:col-span-2" label="Description" id="description"><Input id="description" {...form.register("description")} /></Field>
-              <SelectField label="Priority" value={task.priority} values={priorities} onValueChange={(value) => form.setValue("priority", value as TaskEditValues["priority"])} />
-              <SelectField label="Status" value={task.status} values={statuses} onValueChange={(value) => form.setValue("status", value as TaskEditValues["status"])} />
-              <Field label="Due Date" id="dueDate"><Input id="dueDate" type="date" defaultValue={task.dueDate.slice(0, 10)} {...form.register("dueDate")} /></Field>
-              <Field label="Estimated Hours" id="estimatedHours"><Input id="estimatedHours" type="number" step="0.25" {...form.register("estimatedHours")} /></Field>
-              <Field label="Actual Hours" id="actualHours"><Input id="actualHours" type="number" step="0.25" {...form.register("actualHours")} /></Field>
-              {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
-              <Button className="md:col-span-2" type="submit" disabled={pending}>{pending ? "Saving..." : "Save changes"}</Button>
-            </form>
-          </TabsContent>
-          <TabsContent value="comments">
-            <CommentSection
-              entityType="task"
-              entityId={task.id}
-              currentUserId={currentUserId}
-              currentUserRole={currentUserRole}
-            />
-          </TabsContent>
-          <TabsContent value="attachments">
-            <AttachmentSection
-              entityType="task"
-              entityId={task.id}
-              canDelete={["ADMIN", "PROJECT_MANAGER"].includes(currentUserRole)}
-            />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button size={compact ? "icon" : "sm"} variant={compact ? "ghost" : "outline"} className={compact ? "h-7 w-7" : undefined} aria-label="Edit task">
+            <Pencil className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            {!compact && "Edit"}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>Update execution status, priority, dates, and effort tracking.</DialogDescription>
+          </DialogHeader>
+          <Tabs defaultValue="edit">
+            <TabsList className="mb-2">
+              <TabsTrigger value="edit">Details</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="attachments">Files</TabsTrigger>
+            </TabsList>
+            <TabsContent value="edit">
+              <form className="grid gap-4 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+                <Field className="md:col-span-2" label="Title" id="title"><Input id="title" {...form.register("title")} /></Field>
+                <Field className="md:col-span-2" label="Description" id="description"><Input id="description" {...form.register("description")} /></Field>
+                <SelectField label="Priority" value={task.priority} values={priorities} onValueChange={(value) => form.setValue("priority", value as TaskEditValues["priority"])} />
+                <SelectField label="Status" value={task.status} values={statuses} onValueChange={(value) => form.setValue("status", value as TaskEditValues["status"])} />
+                <Field label="Due Date" id="dueDate"><Input id="dueDate" type="date" defaultValue={task.dueDate.slice(0, 10)} {...form.register("dueDate")} /></Field>
+                <Field label="Estimated Hours" id="estimatedHours"><Input id="estimatedHours" type="number" step="0.25" {...form.register("estimatedHours")} /></Field>
+                <Field label="Actual Hours" id="actualHours"><Input id="actualHours" type="number" step="0.25" {...form.register("actualHours")} /></Field>
+                {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
+                <Button className="md:col-span-2" type="submit" disabled={pending}>{pending ? "Saving..." : "Save changes"}</Button>
+              </form>
+            </TabsContent>
+            <TabsContent value="comments">
+              <CommentSection
+                entityType="task"
+                entityId={task.id}
+                currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
+              />
+            </TabsContent>
+            <TabsContent value="attachments">
+              <AttachmentSection
+                entityType="task"
+                entityId={task.id}
+                canDelete={["ADMIN", "PROJECT_MANAGER"].includes(currentUserRole)}
+              />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); form.reset(); setOpen(false); }}
+      />
+    </>
   );
 }
 
