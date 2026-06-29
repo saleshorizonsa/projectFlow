@@ -3,6 +3,15 @@ import { requireRole } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
 import { itLicenseSchema } from "@/lib/validators";
 
+export async function GET() {
+  await requireRole("VIEWER");
+  const licenses = await getPrisma().iTLicense.findMany({
+    select: { id: true, licenseId: true, name: true, vendor: true, employeeId: true, assetId: true, expiryDate: true },
+    orderBy: { name: "asc" },
+  });
+  return NextResponse.json(licenses);
+}
+
 export async function POST(request: Request) {
   const session = await requireRole("PROJECT_MANAGER");
   const parsed = itLicenseSchema.safeParse(await request.json().catch(() => null));

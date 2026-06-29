@@ -149,14 +149,14 @@ function EmployeeAssignDialog({ employee }: { employee: EmployeeRow }) {
     setSelectedLicenseId("");
     setLoading(true);
     Promise.all([
-      fetch("/api/it-assets").then((r) => r.json()),
-      fetch("/api/it-licenses").then((r) => r.json()),
+      fetch("/api/it-assets").then(async (r) => { if (!r.ok) throw new Error(`assets ${r.status}`); return r.json(); }),
+      fetch("/api/it-licenses").then(async (r) => { if (!r.ok) throw new Error(`licenses ${r.status}`); return r.json(); }),
     ])
       .then(([assets, licenses]: [ApiAsset[], ApiLicense[]]) => {
-        setAvailableAssets(assets.filter((a) => !a.employeeId));
-        setAvailableLicenses(licenses.filter((l) => !l.employeeId));
+        setAvailableAssets(Array.isArray(assets) ? assets.filter((a) => !a.employeeId) : []);
+        setAvailableLicenses(Array.isArray(licenses) ? licenses.filter((l) => !l.employeeId) : []);
       })
-      .catch(() => setMessage("Failed to load available items."))
+      .catch((err: Error) => setMessage(`Failed to load available items: ${err.message}`))
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, employee.id]);
