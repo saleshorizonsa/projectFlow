@@ -1,9 +1,8 @@
-import { Search } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CompanyFilter } from "@/components/layout/company-filter";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { getPrisma } from "@/lib/prisma";
 
@@ -18,10 +17,7 @@ export async function TopNav() {
         <div className="truncate text-sm font-semibold">ProjectFlow</div>
         <div className="truncate text-xs text-muted-foreground">Dashboard / Projects & Current State / Operational control</div>
       </div>
-      <div className="hidden w-full max-w-sm items-center gap-2 rounded-md border bg-card px-3 md:flex">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <Input className="border-0 px-0 shadow-none focus-visible:ring-0" placeholder="Search projects, current state, gaps, tasks" />
-      </div>
+      <GlobalSearch />
       <div className="order-3 flex w-full items-center justify-between gap-2 md:order-none md:w-auto md:justify-end">
         <CompanyFilter companies={companies.map((company) => ({ id: company.id, name: company.name, code: company.code }))} />
         <div className="flex shrink-0 items-center gap-2">
