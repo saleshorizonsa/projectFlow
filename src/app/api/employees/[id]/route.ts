@@ -14,7 +14,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid employee data", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { companyIds, email, ...payload } = parsed.data;
+  const { companyIds, email, ipAddress, vpnUserId, vpnPassword, ...payload } = parsed.data;
   if (companyIds) {
     const companies = await getPrisma().company.findMany({ where: { id: { in: companyIds }, active: true } });
     if (companies.length !== companyIds.length) {
@@ -27,6 +27,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     data: {
       ...payload,
       email: email === "" ? null : email,
+      ...(ipAddress !== undefined ? { ipAddress: ipAddress === "" ? null : ipAddress } : {}),
+      ...(vpnUserId !== undefined ? { vpnUserId: vpnUserId === "" ? null : vpnUserId } : {}),
+      ...(vpnPassword !== undefined ? { vpnPassword: vpnPassword === "" ? null : vpnPassword } : {}),
       updatedBy: session.user.id,
       ...(companyIds ? {
         companies: {

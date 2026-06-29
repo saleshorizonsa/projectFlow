@@ -38,6 +38,8 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     ipAddress: employee.ipAddress,
     vpnUserId: employee.vpnUserId,
     vpnPassword: employee.vpnPassword,
+    exitDate: employee.exitDate ? employee.exitDate.toISOString().split("T")[0] : null,
+    offboardingNotes: employee.offboardingNotes,
     companies: employee.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
     assets: employee.assets.map((asset) => ({ id: asset.id, assetTag: asset.assetTag, name: asset.name, type: asset.type })),
     licenses: employee.licenses.map((license) => ({ id: license.id, licenseId: license.licenseId, name: license.name, vendor: license.vendor })),

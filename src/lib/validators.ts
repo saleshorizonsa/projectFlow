@@ -40,6 +40,8 @@ export const employeeSchema = z.object({
   ipAddress: z.string().optional(),
   vpnUserId: z.string().optional(),
   vpnPassword: z.string().optional(),
+  exitDate: z.coerce.date().optional().nullable(),
+  offboardingNotes: z.string().optional(),
 });
 
 export const employeeUpdateSchema = employeeSchema.partial();
