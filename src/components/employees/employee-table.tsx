@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn, formatEnum } from "@/lib/utils";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type CompanyOption = { id: string; name: string; code: string };
 type AssetItem = { id: string; assetTag: string; name: string; type: string };
@@ -872,8 +873,20 @@ function EmployeeEditDialog({
     employee.companies.map((company) => company.id),
   );
   const [showVpnPassword, setShowVpnPassword] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) {
+      setDiscardOpen(true);
+    } else {
+      if (!next) setIsDirty(false);
+      setOpen(next);
+    }
+  }
 
   function toggleCompany(companyId: string, checked: boolean) {
+    setIsDirty(true);
     setSelectedCompanyIds((current) =>
       checked
         ? Array.from(new Set([...current, companyId]))
@@ -912,12 +925,13 @@ function EmployeeEditDialog({
         return;
       }
       setOpen(false);
+      setIsDirty(false);
       router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Pencil className="h-4 w-4" /> Edit
@@ -928,7 +942,7 @@ function EmployeeEditDialog({
           <DialogTitle>Edit Employee</DialogTitle>
           <DialogDescription>Update employee details and company assignment.</DialogDescription>
         </DialogHeader>
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit} onChange={() => setIsDirty(true)}>
           <Field label="Employee ID" id="employeeId">
             <Input id="employeeId" name="employeeId" defaultValue={employee.employeeId} />
           </Field>
@@ -952,7 +966,7 @@ function EmployeeEditDialog({
           </Field>
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={(v) => { setStatus(v); setIsDirty(true); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1027,6 +1041,11 @@ function EmployeeEditDialog({
           </Button>
         </form>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }

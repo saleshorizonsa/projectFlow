@@ -117,13 +117,27 @@ export const teamMemberSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   phone: z.string().optional(),
-  password: z.string().min(8),
+  password: z
+    .string()
+    .min(12, "Password must be at least 12 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one digit")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   role: z.enum(["ADMIN", "PROJECT_MANAGER", "TEAM_MEMBER", "VIEWER"]),
   companyIds: z.array(z.string().min(1)).default([]),
 });
 
 export const teamMemberUpdateSchema = teamMemberSchema.partial().extend({
-  password: z.string().min(8).optional().or(z.literal("")),
+  password: z
+    .string()
+    .min(12, "Password must be at least 12 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one digit")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const itAssetSchema = z.object({
@@ -140,6 +154,10 @@ export const itAssetSchema = z.object({
   assignedToId: z.string().optional(),
   employeeId: z.string().optional(),
   notes: z.string().optional(),
+});
+
+export const itAssetUpdateSchema = itAssetSchema.partial().extend({
+  companyIds: z.array(z.string().min(1)).min(1, "Select at least one company").optional(),
 });
 
 export const itMaintenanceSchema = z.object({

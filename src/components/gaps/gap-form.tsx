@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { calculateGapImpact } from "@/lib/gap-impact";
 import { gapSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type GapValues = z.infer<typeof gapSchema>;
 
@@ -64,6 +65,7 @@ export function GapForm({ projects, users }: { projects: ProjectOption[]; users:
     },
   });
 
+  useUnsavedChangesWarning(form.formState.isDirty);
   const projectId = form.watch("projectId");
   const layerId = form.watch("layerId");
   const severity = form.watch("severity");

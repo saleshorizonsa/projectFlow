@@ -205,10 +205,33 @@ model User {
   alertDeliveries         AlertDelivery[]
   accounts                Account[]
   sessions                Session[]
+  failedLoginAttempts     Int                   @default(0)
+  lockedUntil             DateTime?
+  lastLoginAt             DateTime?
+  lastLoginIp             String?
+  mfaSecret               String?
+  mfaEnabled              Boolean               @default(false)
+  mfaBackupCodes          String[]
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
   createdBy               String?
   updatedBy               String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  detail    Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
 
 model Role {

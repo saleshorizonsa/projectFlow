@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageSquarePlus, Trash2 } from "lucide-react";
+import { MessageSquarePlus, Send, Trash2 } from "lucide-react";
 import { AttachmentSection } from "@/components/attachments/attachment-section";
 import { CommentSection } from "@/components/comments/comment-section";
 import { useRouter } from "next/navigation";
@@ -14,7 +14,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supportTicketSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { formatEnum } from "@/lib/utils";
 
 type TicketValues = z.infer<typeof supportTicketSchema>;
@@ -47,6 +49,7 @@ type Ticket = {
   resolveDueAt: string | null;
   respondedAt: string | null;
   slaBreached: boolean;
+  whatsappFrom: string | null;
   createdAt: string;
   updatedAt: string;
   events: { id: string; body: string; direction: string; source: string; authorName: string | null; createdAt: string }[];
@@ -102,6 +105,7 @@ export function SupportTicketDesk({
       assignedToId: "",
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
   const selectedCompanyId = form.watch("companyId") || defaultCompanyId;
   const filteredEmployees = useMemo(() => employees.filter((employee) => employee.companyIds.includes(selectedCompanyId)), [employees, selectedCompanyId]);
   const filteredAssets = useMemo(() => assets.filter((asset) => asset.companyIds.includes(selectedCompanyId)), [assets, selectedCompanyId]);
@@ -173,6 +177,9 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
   const [assignedToId, setAssignedToId] = useState(ticket.assignedToId ?? "");
   const [eventBody, setEventBody] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [waReply, setWaReply] = useState("");
+  const [waMessage, setWaMessage] = useState<string | null>(null);
+  const [waSending, setWaSending] = useState(false);
 
   function updateTicket() {
     setMessage(null);
@@ -190,6 +197,26 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
       setEventBody("");
       router.refresh();
     });
+  }
+
+  async function sendWhatsAppReply() {
+    if (!waReply.trim()) return;
+    setWaSending(true);
+    setWaMessage(null);
+    const res = await fetch(`/api/support-tickets/${ticket.id}/whatsapp-reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: waReply.trim() }),
+    });
+    if (res.ok) {
+      setWaReply("");
+      setWaMessage("Sent via WhatsApp.");
+      router.refresh();
+    } else {
+      const body = await res.json().catch(() => null);
+      setWaMessage(body?.error ?? "WhatsApp send failed.");
+    }
+    setWaSending(false);
   }
 
   function deleteTicket() {
@@ -255,6 +282,24 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
                   <div className="text-xs text-muted-foreground">{formatEnum(event.direction)} / {formatEnum(event.source)} / {event.authorName ?? "System"} / {new Date(event.createdAt).toLocaleString()}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {ticket.whatsappFrom && (
+          <div className="space-y-2 rounded-md border border-green-200 bg-green-50/40 p-3 dark:border-green-900 dark:bg-green-950/20">
+            <p className="text-xs font-semibold text-green-700 dark:text-green-400">Reply via WhatsApp → {ticket.whatsappFrom}</p>
+            <Textarea
+              value={waReply}
+              onChange={(e) => setWaReply(e.target.value)}
+              placeholder="Type your WhatsApp reply…"
+              rows={3}
+              className="resize-none text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={sendWhatsAppReply} disabled={waSending || !waReply.trim()}>
+                <Send className="mr-2 h-3 w-3" />{waSending ? "Sending…" : "Send"}
+              </Button>
+              {waMessage && <p className="text-xs text-muted-foreground">{waMessage}</p>}
             </div>
           </div>
         )}

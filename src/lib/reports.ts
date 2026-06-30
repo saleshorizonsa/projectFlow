@@ -43,7 +43,9 @@ function dateValue(value: Date | string | null | undefined) {
 }
 
 function csvEscape(value: CsvValue) {
-  const text = value instanceof Date ? dateValue(value) : String(value ?? "");
+  const raw = value instanceof Date ? dateValue(value) : String(value ?? "");
+  // Prevent CSV formula injection (OWASP): prefix formula triggers with apostrophe
+  const text = /^[=+\-@\t\r|%]/.test(raw) ? `'${raw}` : raw;
   if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
   return text;
 }

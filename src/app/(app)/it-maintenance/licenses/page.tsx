@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LicenseExpiryTable } from "@/components/it-maintenance/it-maintenance-tables";
+import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
@@ -24,6 +25,7 @@ export default async function ITLicensesPage({ searchParams }: { searchParams?: 
             <CardDescription>Track software licenses, subscriptions, assigned employees, and renewal ownership.</CardDescription>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
+            {session?.user.role !== "VIEWER" && <CsvImportDialog type="license" />}
             {session?.user.role !== "VIEWER" && <Button asChild><Link href="/it-maintenance/licenses/new">Add License</Link></Button>}
             <Button asChild variant="outline"><Link href="/it-maintenance/licenses/renewals">Renewal Risks</Link></Button>
           </div>

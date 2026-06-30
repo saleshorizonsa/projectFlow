@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { teamMemberSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type TeamMemberValues = z.infer<typeof teamMemberSchema>;
 type CompanyOption = { id: string; name: string; code: string };
@@ -32,6 +33,7 @@ export function TeamForm({ companies }: { companies: CompanyOption[] }) {
       companyIds: [],
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
   const selectedCompanyIds = form.watch("companyIds") ?? [];
 
   function toggleCompany(companyId: string, checked: boolean) {

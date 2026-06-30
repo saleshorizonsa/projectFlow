@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BarChart2, BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, TriangleAlert, FileText, Users } from "lucide-react";
+import { BarChart2, BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, TriangleAlert, FileText, Users, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,7 @@ const navSections = [
     label: "Administration",
     items: [
       { href: "/admin/users", label: "User Management", icon: Shield },
+      { href: "/profile", label: "My Profile & Security", icon: UserCircle },
     ],
   },
 ];

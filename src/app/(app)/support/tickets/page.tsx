@@ -62,6 +62,7 @@ export default async function SupportTicketsPage({ searchParams }: { searchParam
           resolveDueAt: ticket.resolveDueAt?.toISOString() ?? null,
           respondedAt: ticket.respondedAt?.toISOString() ?? null,
           slaBreached: ticket.slaBreached,
+          whatsappFrom: ticket.whatsappFrom,
           createdAt: ticket.createdAt.toISOString(),
           updatedAt: ticket.updatedAt.toISOString(),
           events: ticket.events.map((event) => ({

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { itAssetSchema, itLicenseSchema, itMaintenanceSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type AssetValues = z.infer<typeof itAssetSchema>;
 type MaintenanceValues = z.infer<typeof itMaintenanceSchema>;
@@ -46,6 +47,7 @@ export function ITAssetForm({ companies, users, employees }: { companies: Compan
       notes: "",
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
   const selectedCompanyIds = form.watch("companyIds") ?? [];
 
   function toggleCompany(companyId: string, checked: boolean) {
@@ -132,6 +134,7 @@ export function ITMaintenanceForm({ assets, users }: { assets: AssetOption[]; us
       downtimeRequired: false,
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
 
   async function onSubmit(values: MaintenanceValues) {
     setMessage(null);
@@ -190,6 +193,7 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
       notes: "",
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
 
   async function onSubmit(values: LicenseValues) {
     setMessage(null);

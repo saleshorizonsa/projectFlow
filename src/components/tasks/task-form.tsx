@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { taskSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type TaskFormValues = z.infer<typeof taskSchema>;
 
@@ -52,6 +53,7 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
     },
   });
 
+  useUnsavedChangesWarning(form.formState.isDirty);
   const projectId = form.watch("projectId");
   const layerId = form.watch("layerId");
   const taskType = form.watch("taskType");

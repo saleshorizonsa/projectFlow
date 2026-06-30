@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { companySchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type CompanyFormValues = z.infer<typeof companySchema>;
 
@@ -21,6 +22,8 @@ export function CompanyForm() {
     resolver: zodResolver(companySchema),
     defaultValues: { code: "", name: "", description: "", active: true },
   });
+
+  useUnsavedChangesWarning(form.formState.isDirty);
 
   async function onSubmit(values: CompanyFormValues) {
     setMessage(null);

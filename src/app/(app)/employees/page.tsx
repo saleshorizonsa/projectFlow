@@ -1,5 +1,7 @@
 ﻿import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeTable } from "@/components/employees/employee-table";
+import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
+import { safeDecryptField } from "@/lib/encrypt";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -37,7 +39,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     status: employee.status,
     ipAddress: employee.ipAddress,
     vpnUserId: employee.vpnUserId,
-    vpnPassword: employee.vpnPassword,
+    vpnPassword: safeDecryptField(employee.vpnPassword),
     exitDate: employee.exitDate ? employee.exitDate.toISOString().split("T")[0] : null,
     offboardingNotes: employee.offboardingNotes,
     companies: employee.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
@@ -78,6 +80,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
           <TabsList className="h-auto min-w-max justify-start">
             <TabsTrigger value="directory">Directory</TabsTrigger>
             {canManage && <TabsTrigger value="create">Add Employee</TabsTrigger>}
+            {canManage && <TabsTrigger value="import">Import CSV</TabsTrigger>}
             <TabsTrigger value="assets">Asset Custody</TabsTrigger>
             <TabsTrigger value="licenses">Licenses</TabsTrigger>
           </TabsList>
@@ -96,6 +99,15 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
         {canManage && (
           <TabsContent value="create">
             <EmployeeForm companies={companyOptions} />
+          </TabsContent>
+        )}
+
+        {canManage && (
+          <TabsContent value="import">
+            <div className="flex flex-col items-start gap-4">
+              <p className="text-sm text-muted-foreground">Bulk-import employees from a CSV file. Download the template, fill it in, and upload.</p>
+              <CsvImportDialog type="employee" companies={companyOptions} buttonLabel="Import Employees from CSV" buttonVariant="default" />
+            </div>
           </TabsContent>
         )}
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
 import { employeeUpdateSchema } from "@/lib/validators";
+import { encryptField } from "@/lib/encrypt";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -29,7 +30,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       email: email === "" ? null : email,
       ...(ipAddress !== undefined ? { ipAddress: ipAddress === "" ? null : ipAddress } : {}),
       ...(vpnUserId !== undefined ? { vpnUserId: vpnUserId === "" ? null : vpnUserId } : {}),
-      ...(vpnPassword !== undefined ? { vpnPassword: vpnPassword === "" ? null : vpnPassword } : {}),
+      ...(vpnPassword !== undefined ? { vpnPassword: vpnPassword === "" ? null : encryptField(vpnPassword) } : {}),
       updatedBy: session.user.id,
       ...(companyIds ? {
         companies: {

@@ -2,8 +2,11 @@ import { differenceInCalendarDays, differenceInYears } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseActions } from "@/components/it-maintenance/license-actions";
+import { AssetQrButton } from "@/components/it-maintenance/asset-qr-button";
+import { AssetEditDialog } from "@/components/it-maintenance/asset-edit-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatEnum } from "@/lib/utils";
+import { getAssetRecommendations, topRecommendation, severityVariant } from "@/lib/asset-recommendations";
 
 type Company = { id: string; code: string; name: string };
 type User = { name: string };
@@ -20,9 +23,13 @@ export type AssetTableRow = {
   purchaseDate: Date;
   lifecycleYears: number;
   status: string;
+  notes?: string | null;
+  assignedToId?: string | null;
+  employeeId?: string | null;
   assignedTo: User | null;
   employee: Employee | null;
   companies: { company: Company }[];
+  maintenances?: { scheduledAt: Date; status: string }[];
 };
 
 export type MaintenanceTableRow = {
@@ -150,20 +157,38 @@ export function LicenseExpiryTable({ licenses, compact = false, canManage = fals
   );
 }
 
-export function AssetRegisterTable({ assets, compact = false }: { assets: AssetTableRow[]; compact?: boolean }) {
+type AssetTableProps = {
+  assets: AssetTableRow[];
+  compact?: boolean;
+  canManage?: boolean;
+  companies?: { id: string; name: string; code: string }[];
+  users?: { id: string; name: string }[];
+  employees?: { id: string; name: string; employeeId: string }[];
+};
+
+export function AssetRegisterTable({ assets, compact = false, canManage = false, companies = [], users = [], employees = [] }: AssetTableProps) {
   const now = new Date();
   return (
     <Card>
-      <CardHeader><CardTitle>Asset Register & Upgrade Recommendations</CardTitle></CardHeader>
+      <CardHeader><CardTitle>Asset Register</CardTitle></CardHeader>
       <CardContent>
         <div className={compact ? "max-h-[520px] overflow-auto rounded-md border" : "overflow-auto rounded-md border"}>
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Asset</TableHead><TableHead>Type</TableHead><TableHead>Location</TableHead><TableHead>Age</TableHead><TableHead>Recommendation</TableHead><TableHead>Status</TableHead></TableRow>
+              <TableRow>
+                <TableHead>Asset</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>Alerts</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
             </TableHeader>
             <TableBody>
               {assets.map((asset) => {
-                const recommendation = hardwareRecommendation(asset.purchaseDate, asset.lifecycleYears);
+                const recs = getAssetRecommendations(asset);
+                const top = topRecommendation(recs);
                 return (
                   <TableRow key={asset.id}>
                     <TableCell>
@@ -175,13 +200,41 @@ export function AssetRegisterTable({ assets, compact = false }: { assets: AssetT
                     </TableCell>
                     <TableCell>{formatEnum(asset.type)}</TableCell>
                     <TableCell>{asset.location}</TableCell>
-                    <TableCell>{differenceInYears(now, asset.purchaseDate)} year(s)</TableCell>
-                    <TableCell><Badge variant={recommendation.variant}>{recommendation.label}</Badge></TableCell>
+                    <TableCell>{differenceInYears(now, asset.purchaseDate)} yr</TableCell>
+                    <TableCell>
+                      {top ? (
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={severityVariant(top.severity)}>{top.label}</Badge>
+                          {recs.length > 1 && <span className="text-xs text-muted-foreground">+{recs.length - 1} more</span>}
+                        </div>
+                      ) : (
+                        <Badge variant="success">OK</Badge>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant={asset.status === "ACTIVE" ? "success" : "secondary"}>{formatEnum(asset.status)}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {canManage && (
+                          <AssetEditDialog
+                            asset={asset}
+                            companies={companies}
+                            users={users}
+                            employees={employees}
+                          />
+                        )}
+                        <AssetQrButton assetTag={asset.assetTag} name={asset.name} type={asset.type} vendor={asset.vendor} location={asset.location} />
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}
-              {assets.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Add servers, routers, applications, databases, or cloud services to begin maintenance planning.</TableCell></TableRow>}
+              {assets.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    Add servers, routers, applications, databases, or cloud services to begin maintenance planning.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,0 +1,63 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
+import { QrCode } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+type Props = { assetTag: string; name: string; type: string; vendor: string; location: string };
+
+export function AssetQrButton({ assetTag, name, type, vendor, location }: Props) {
+  const [qrDataUrl, setQrDataUrl] = useState("");
+
+  useEffect(() => {
+    QRCode.toDataURL(assetTag, { width: 220, margin: 1 }).then(setQrDataUrl).catch(console.error);
+  }, [assetTag]);
+
+  function printLabel() {
+    const win = window.open("", "_blank", "width=420,height=540");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>${assetTag}</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;padding:24px;display:flex;justify-content:center}
+  .label{border:1px solid #ccc;border-radius:10px;padding:20px;width:220px;text-align:center}
+  img{display:block;margin:0 auto 10px}
+  .tag{font-size:20px;font-weight:700;letter-spacing:.5px}
+  .row{font-size:11px;color:#666;margin-top:3px}
+</style></head><body>
+<div class="label">
+  <img src="${qrDataUrl}" width="200" height="200"/>
+  <div class="tag">${assetTag}</div>
+  <div class="row">${name}</div>
+  <div class="row">${type.replace(/_/g, " ")} · ${vendor}</div>
+  <div class="row">${location}</div>
+</div>
+<script>window.onload=()=>{window.print();window.close()}</script>
+</body></html>`);
+    win.document.close();
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" aria-label="Print QR label"><QrCode className="h-4 w-4" /></Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xs">
+        <DialogHeader><DialogTitle>QR Label — {assetTag}</DialogTitle></DialogHeader>
+        <div className="flex flex-col items-center gap-3 pt-1">
+          {qrDataUrl
+            ? <img src={qrDataUrl} alt={`QR for ${assetTag}`} width={200} height={200} className="rounded-md border" />
+            : <div className="h-[200px] w-[200px] animate-pulse rounded-md bg-muted" />}
+          <div className="text-center">
+            <p className="text-lg font-bold">{assetTag}</p>
+            <p className="text-sm text-muted-foreground">{name}</p>
+            <p className="text-xs text-muted-foreground">{type.replace(/_/g, " ")} · {vendor}</p>
+            <p className="text-xs text-muted-foreground">{location}</p>
+          </div>
+          <Button onClick={printLabel} disabled={!qrDataUrl} className="w-full">Print Label</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { gapActionSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 
 type GapActionValues = z.infer<typeof gapActionSchema>;
 type GapOption = { id: string; label: string };
@@ -34,6 +35,8 @@ export function GapActionForm({ gaps, users }: { gaps: GapOption[]; users: UserO
       progress: 0,
     },
   });
+
+  useUnsavedChangesWarning(form.formState.isDirty);
 
   async function onSubmit(values: GapActionValues) {
     setMessage(null);

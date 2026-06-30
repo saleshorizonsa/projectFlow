@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { projectSchema } from "@/lib/validators";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ export function ProjectForm({ managerId, companies }: { managerId: string; compa
       endDate: new Date(),
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
   const selectedCompanyIds = form.watch("companyIds") ?? [];
 
   function toggleCompany(companyId: string, checked: boolean) {
