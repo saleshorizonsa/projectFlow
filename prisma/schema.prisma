@@ -186,6 +186,78 @@ enum RiskTreatment {
   AVOID
 }
 
+enum VulnSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFORMATIONAL
+}
+
+enum VulnStatus {
+  OPEN
+  IN_PROGRESS
+  REMEDIATED
+  ACCEPTED_RISK
+  FALSE_POSITIVE
+}
+
+enum BackupFrequency {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum BackupStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+  UNKNOWN
+}
+
+enum PolicyStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  DEPRECATED
+}
+
+enum AcknowledgementStatus {
+  PENDING
+  ACKNOWLEDGED
+  DECLINED
+}
+
+enum IncidentSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  REPORTED
+  INVESTIGATING
+  CONTAINED
+  ERADICATED
+  RECOVERED
+  CLOSED
+}
+
+enum IncidentType {
+  DATA_BREACH
+  RANSOMWARE
+  PHISHING
+  DDOS
+  UNAUTHORIZED_ACCESS
+  MALWARE
+  INSIDER_THREAT
+  PHYSICAL_SECURITY
+  SYSTEM_OUTAGE
+  OTHER
+}
+
 enum RiskStatus {
   OPEN
   UNDER_TREATMENT
@@ -243,6 +315,11 @@ model User {
   responsibleControls     ComplianceControl[]   @relation("ControlResponsible")
   uploadedEvidences       ControlEvidence[]     @relation("EvidenceUploader")
   auditFindings           AuditFinding[]        @relation("FindingResponsible")
+  assignedVulnerabilities Vulnerability[]       @relation("VulnAssignee")
+  approvedPolicies        Policy[]              @relation("PolicyApprover")
+  assignedIncidents       Incident[]            @relation("IncidentAssignee")
+  incidentTimelines       IncidentTimeline[]    @relation("IncidentTimelineAuthor")
+  pirReviews              PostIncidentReview[]  @relation("PIRReviewer")
   notifications           Notification[]
   alertDeliveries         AlertDelivery[]
   accounts                Account[]
@@ -304,10 +381,13 @@ model ITAsset {
   employee       Employee?        @relation("EmployeeAssets", fields: [employeeId], references: [id], onDelete: SetNull)
   notes          String?
   companies      ITAssetCompany[]
-  maintenances   ITMaintenance[]
-  licenses       ITLicense[]
-  supportTickets SupportTicket[]
-  risks          Risk[]
+  maintenances    ITMaintenance[]
+  licenses        ITLicense[]
+  supportTickets  SupportTicket[]
+  risks           Risk[]
+  vulnerabilities Vulnerability[]
+  backupJobs      BackupJob[]
+  incidents       IncidentAsset[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   createdBy      String?
@@ -394,7 +474,8 @@ model Employee {
   exitDate         DateTime?
   offboardingNotes String?
   companies        EmployeeCompany[]
-  assets         ITAsset[]         @relation("EmployeeAssets")
+  assets         ITAsset[]               @relation("EmployeeAssets")
+  policyAcknowledgements PolicyAcknowledgement[]
   licenses       ITLicense[]       @relation("EmployeeLicenses")
   supportTickets SupportTicket[]
   createdAt      DateTime          @default(now())
@@ -428,6 +509,8 @@ model Company {
   users          UserCompany[]
   employees      EmployeeCompany[]
   supportTickets SupportTicket[]
+  incidents      Incident[]
+  playbooks      IncidentPlaybook[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   createdBy      String?
@@ -898,6 +981,8 @@ model ComplianceControl {
   evidences           ControlEvidence[]
   findings            AuditFinding[]
   risks               Risk[]
+  policyMappings      PolicyControl[]
+  vulnerabilities     Vulnerability[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   createdBy           String?
@@ -951,6 +1036,7 @@ model Risk {
   closedAt           DateTime?
   companyId          String?
   notes              String?
+  incidents          IncidentRisk[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   createdBy          String?
@@ -983,4 +1069,265 @@ model AuditFinding {
   @@index([status])
   @@index([severity])
   @@index([controlId])
+}
+
+model Vulnerability {
+  id                String             @id @default(cuid())
+  vulnId            String             @unique
+  title             String
+  cveId             String?
+  description       String
+  severity          VulnSeverity
+  cvssScore         Decimal?           @db.Decimal(4, 1)
+  status            VulnStatus         @default(OPEN)
+  affectedComponent String?
+  source            String?
+  remediation       String?
+  dueDate           DateTime?
+  closedAt          DateTime?
+  discoveredAt      DateTime           @default(now())
+  assetId           String?
+  asset             ITAsset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  assignedToId      String?
+  assignedTo        User?              @relation("VulnAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  controlId         String?
+  control           ComplianceControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  companyId         String?
+  notes             String?
+  incidents         IncidentVulnerability[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([status])
+  @@index([severity])
+  @@index([assetId])
+  @@index([dueDate])
+}
+
+model BackupJob {
+  id            String          @id @default(cuid())
+  jobId         String          @unique
+  name          String
+  assetId       String?
+  asset         ITAsset?        @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  frequency     BackupFrequency @default(DAILY)
+  rpoHours      Int             @default(24)
+  retentionDays Int             @default(30)
+  lastRunAt     DateTime?
+  lastStatus    BackupStatus    @default(UNKNOWN)
+  lastSizeBytes BigInt?
+  nextRunAt     DateTime?
+  isActive      Boolean         @default(true)
+  notes         String?
+  companyId     String?
+  logs          BackupLog[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  createdBy     String?
+  updatedBy     String?
+
+  @@index([isActive])
+  @@index([lastStatus])
+}
+
+model BackupLog {
+  id              String       @id @default(cuid())
+  jobId           String
+  job             BackupJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status          BackupStatus
+  startedAt       DateTime
+  completedAt     DateTime?
+  durationMinutes Int?
+  sizeBytes       BigInt?
+  errorMessage    String?
+  createdAt       DateTime     @default(now())
+
+  @@index([jobId])
+  @@index([startedAt])
+}
+
+model Policy {
+  id               String                  @id @default(cuid())
+  policyId         String                  @unique
+  title            String
+  description      String?
+  category         String
+  status           PolicyStatus            @default(DRAFT)
+  version          String                  @default("1.0")
+  fileUrl          String?
+  fileName         String?
+  effectiveDate    DateTime?
+  reviewDate       DateTime?
+  approverId       String?
+  approver         User?                   @relation("PolicyApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approvedAt       DateTime?
+  companyId        String?
+  versions         PolicyVersion[]
+  acknowledgements PolicyAcknowledgement[]
+  controls         PolicyControl[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  createdBy        String?
+  updatedBy        String?
+
+  @@index([status])
+  @@index([category])
+  @@index([reviewDate])
+}
+
+model PolicyVersion {
+  id          String   @id @default(cuid())
+  policyId    String
+  policy      Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  version     String
+  fileUrl     String
+  fileName    String
+  notes       String?
+  publishedAt DateTime @default(now())
+  publishedBy String?
+
+  @@index([policyId])
+}
+
+model PolicyAcknowledgement {
+  id             String                @id @default(cuid())
+  policyId       String
+  policy         Policy                @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  status         AcknowledgementStatus @default(PENDING)
+  sentAt         DateTime              @default(now())
+  acknowledgedAt DateTime?
+  ipAddress      String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([policyId, employeeId])
+  @@index([policyId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+model PolicyControl {
+  id        String            @id @default(cuid())
+  policyId  String
+  policy    Policy            @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  controlId String
+  control   ComplianceControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+
+  @@unique([policyId, controlId])
+}
+
+model Incident {
+  id              String                  @id @default(cuid())
+  incidentId      String                  @unique
+  title           String
+  description     String?
+  type            IncidentType            @default(OTHER)
+  severity        IncidentSeverity        @default(HIGH)
+  status          IncidentStatus          @default(REPORTED)
+  impact          String?
+  rootCause       String?
+  affectedSystems String?
+  reportedAt      DateTime                @default(now())
+  containedAt     DateTime?
+  eradicatedAt    DateTime?
+  recoveredAt     DateTime?
+  closedAt        DateTime?
+  assignedToId    String?
+  assignedTo      User?                   @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  companyId       String?
+  company         Company?                @relation(fields: [companyId], references: [id])
+  timeline        IncidentTimeline[]
+  review          PostIncidentReview?
+  assets          IncidentAsset[]
+  vulnerabilities IncidentVulnerability[]
+  risks           IncidentRisk[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([status])
+  @@index([severity])
+  @@index([type])
+  @@index([reportedAt])
+}
+
+model IncidentTimeline {
+  id            String   @id @default(cuid())
+  incidentId    String
+  incident      Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  action        String
+  detail        String?
+  performedById String?
+  performedBy   User?    @relation("IncidentTimelineAuthor", fields: [performedById], references: [id], onDelete: SetNull)
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([incidentId])
+}
+
+model PostIncidentReview {
+  id              String    @id @default(cuid())
+  incidentId      String    @unique
+  incident        Incident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  summary         String?
+  timeline        String?
+  rootCause       String?
+  lessonsLearned  String?
+  recommendations String?
+  reviewedById    String?
+  reviewedBy      User?     @relation("PIRReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model IncidentPlaybook {
+  id          String       @id @default(cuid())
+  playbookId  String       @unique
+  title       String
+  type        IncidentType @default(OTHER)
+  description String?
+  steps       Json
+  companyId   String?
+  company     Company?     @relation(fields: [companyId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model IncidentAsset {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  assetId    String
+  asset      ITAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, assetId])
+}
+
+model IncidentVulnerability {
+  id              String        @id @default(cuid())
+  incidentId      String
+  incident        Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  vulnerabilityId String
+  vulnerability   Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, vulnerabilityId])
+}
+
+model IncidentRisk {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  riskId     String
+  risk       Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, riskId])
 }

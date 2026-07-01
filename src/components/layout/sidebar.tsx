@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BarChart2, BarChart3, Bell, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
+import { BarChart2, BarChart3, Bell, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,8 @@ const navSections = [
       { href: "/vulnerability-management", label: "Vulnerability Management", icon: Bug },
       { href: "/backup-monitoring", label: "Backup Monitoring", icon: DatabaseBackup },
       { href: "/policy-management", label: "Policy Management", icon: FileText },
+      { href: "/incident-response", label: "Incident Response", icon: Siren },
+      { href: "/playbooks", label: "IR Playbooks", icon: BookOpen },
     ],
   },
   {
