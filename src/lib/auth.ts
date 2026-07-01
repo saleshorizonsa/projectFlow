@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getPrisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 import { verifyTotp, verifyAndConsumeBackupCode } from "@/lib/totp";
+import { authConfig } from "@/lib/auth.config";
 
 const LOCK_AFTER_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -17,10 +18,9 @@ const credentialsSchema = z.object({
   ip: z.string().optional(),
 });
 
-export const authConfig = {
+const fullAuthConfig = {
+  ...authConfig,
   adapter: PrismaAdapter(getPrisma()),
-  session: { strategy: "jwt", maxAge: 8 * 60 * 60 }, // 8-hour absolute timeout
-  pages: { signIn: "/login" },
   providers: [
     Credentials({
       credentials: {
@@ -126,21 +126,6 @@ export const authConfig = {
       },
     }),
   ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.role = "role" in user ? user.role : "VIEWER";
-      }
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub ?? "";
-        session.user.role = String(token.role ?? "VIEWER");
-      }
-      return session;
-    },
-  },
 } satisfies NextAuthConfig;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut } = NextAuth(fullAuthConfig);
