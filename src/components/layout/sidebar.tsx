@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BarChart2, BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, TriangleAlert, FileText, Users, UserCircle } from "lucide-react";
+import { BarChart2, BarChart3, Bell, Bot, Building2, Calendar, CalendarClock, ChevronDown, ClipboardList, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,14 @@ const navSections = [
       { href: "/it-maintenance/licenses", label: "Licenses & Renewals", icon: KeyRound },
       { href: "/it-maintenance/licenses/new", label: "Add License", icon: KeyRound },
       { href: "/it-maintenance/licenses/renewals", label: "Renewal Risks", icon: TriangleAlert },
+    ],
+  },
+  {
+    label: "Cybersecurity & Compliance",
+    items: [
+      { href: "/compliance", label: "Compliance Dashboard", icon: CheckSquare },
+      { href: "/risk-register", label: "Risk Register", icon: AlertTriangle },
+      { href: "/audit", label: "Audit Log & Evidence", icon: ScrollText },
     ],
   },
   {

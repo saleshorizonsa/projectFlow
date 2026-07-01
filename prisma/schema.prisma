@@ -179,6 +179,44 @@ enum ResourceAllocationStatus {
   CANCELLED
 }
 
+enum RiskTreatment {
+  ACCEPT
+  MITIGATE
+  TRANSFER
+  AVOID
+}
+
+enum RiskStatus {
+  OPEN
+  UNDER_TREATMENT
+  RESIDUAL
+  CLOSED
+}
+
+enum ControlStatus {
+  NOT_ASSESSED
+  COMPLIANT
+  PARTIALLY_COMPLIANT
+  NON_COMPLIANT
+  NOT_APPLICABLE
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFORMATIONAL
+}
+
+enum FindingStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ACCEPTED
+  CLOSED
+}
+
 model User {
   id                      String                @id @default(cuid())
   name                    String
@@ -201,6 +239,10 @@ model User {
   supportTicketEvents     SupportTicketEvent[]  @relation("SupportTicketEventAuthor")
   comments                Comment[]             @relation("CommentAuthor")
   resourceAllocations     ResourceAllocation[]  @relation("ResourceAllocationUser")
+  ownedRisks              Risk[]                @relation("RiskOwner")
+  responsibleControls     ComplianceControl[]   @relation("ControlResponsible")
+  uploadedEvidences       ControlEvidence[]     @relation("EvidenceUploader")
+  auditFindings           AuditFinding[]        @relation("FindingResponsible")
   notifications           Notification[]
   alertDeliveries         AlertDelivery[]
   accounts                Account[]
@@ -265,6 +307,7 @@ model ITAsset {
   maintenances   ITMaintenance[]
   licenses       ITLicense[]
   supportTickets SupportTicket[]
+  risks          Risk[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   createdBy      String?
@@ -807,4 +850,137 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model ComplianceFramework {
+  id          String             @id @default(cuid())
+  code        String             @unique
+  name        String
+  version     String?
+  description String?
+  domains     ComplianceDomain[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+model ComplianceDomain {
+  id          String              @id @default(cuid())
+  code        String
+  name        String
+  description String?
+  order       Int                 @default(0)
+  frameworkId String
+  framework   ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controls    ComplianceControl[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([frameworkId, code])
+  @@index([frameworkId])
+}
+
+model ComplianceControl {
+  id                  String            @id @default(cuid())
+  controlId           String            @unique
+  title               String
+  description         String?
+  objective           String?
+  domainId            String
+  domain              ComplianceDomain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  status              ControlStatus     @default(NOT_ASSESSED)
+  implementationNotes String?
+  responsibleId       String?
+  responsible         User?             @relation("ControlResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  lastAssessedAt      DateTime?
+  nextReviewAt        DateTime?
+  evidences           ControlEvidence[]
+  findings            AuditFinding[]
+  risks               Risk[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  createdBy           String?
+  updatedBy           String?
+
+  @@index([domainId])
+  @@index([status])
+}
+
+model ControlEvidence {
+  id           String            @id @default(cuid())
+  controlId    String
+  control      ComplianceControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  mimeType     String?
+  size         Int?
+  notes        String?
+  uploadedById String
+  uploadedBy   User              @relation("EvidenceUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  createdBy    String?
+  updatedBy    String?
+
+  @@index([controlId])
+}
+
+model Risk {
+  id                 String             @id @default(cuid())
+  riskId             String             @unique
+  title              String
+  description        String
+  category           String
+  likelihood         Int
+  impact             Int
+  riskScore          Int
+  treatment          RiskTreatment      @default(MITIGATE)
+  treatmentPlan      String?
+  residualLikelihood Int?
+  residualImpact     Int?
+  residualScore      Int?
+  status             RiskStatus         @default(OPEN)
+  ownerId            String
+  owner              User               @relation("RiskOwner", fields: [ownerId], references: [id])
+  assetId            String?
+  asset              ITAsset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  controlId          String?
+  control            ComplianceControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  dueDate            DateTime?
+  closedAt           DateTime?
+  companyId          String?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  createdBy          String?
+  updatedBy          String?
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([riskScore])
+}
+
+model AuditFinding {
+  id            String             @id @default(cuid())
+  findingId     String             @unique
+  title         String
+  description   String
+  severity      FindingSeverity
+  status        FindingStatus      @default(OPEN)
+  controlId     String?
+  control       ComplianceControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  responsibleId String?
+  responsible   User?              @relation("FindingResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  dueDate       DateTime?
+  closedAt      DateTime?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  createdBy     String?
+  updatedBy     String?
+
+  @@index([status])
+  @@index([severity])
+  @@index([controlId])
 }
