@@ -35,15 +35,19 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
       <Card>
         <CardHeader className="border-b pb-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              {employee.companies.map((link) =>
-                link.company.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={link.id} src={link.company.logoUrl} alt={link.company.name} className="h-10 max-w-[120px] object-contain" />
-                ) : (
-                  <div key={link.id} className="text-sm font-semibold text-muted-foreground">{link.company.name}</div>
-                )
-              )}
+            <div className="flex flex-wrap items-center gap-4">
+              {employee.companies.map((link) => (
+                <div key={link.id} className="flex items-center gap-2">
+                  {link.company.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={link.company.logoUrl} alt={link.company.name} className="h-10 max-w-[100px] object-contain" />
+                  )}
+                  <div>
+                    <div className="text-sm font-bold leading-tight">{link.company.name}</div>
+                    <div className="text-xs text-muted-foreground">{link.company.code}</div>
+                  </div>
+                </div>
+              ))}
             </div>
             <CardTitle className="text-right text-base">Employee Asset &amp; License Handover Record</CardTitle>
           </div>
