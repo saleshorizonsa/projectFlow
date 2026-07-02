@@ -41,6 +41,17 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
 
       <Card className="print:border-none print:shadow-none">
         <CardHeader className="border-b pb-4 print:pb-3">
+          {/* Logo row */}
+          {employee.companies.some((l) => l.company.logoUrl) && (
+            <div className="mb-3 flex flex-wrap items-center gap-4 border-b pb-3">
+              {employee.companies.map((link) =>
+                link.company.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={link.id} src={link.company.logoUrl} alt={link.company.name} className="h-10 max-w-[140px] object-contain" />
+                ) : null
+              )}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle className="text-xl">Employee Leave Authorization Form</CardTitle>
