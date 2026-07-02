@@ -21,6 +21,10 @@ function resolveMime(file: File): string | null {
   return EXT_MIME[ext] ?? null;
 }
 
+function hasSupabaseStorage() {
+  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: RouteContext) {
@@ -28,12 +32,6 @@ export async function POST(request: Request, { params }: RouteContext) {
     const session = await auth();
     if (!session?.user || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check env vars before any Supabase call
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("[logo] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment");
-      return NextResponse.json({ error: "Storage not configured", detail: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing from environment variables" }, { status: 500 });
     }
 
     const { id } = await params;
@@ -49,39 +47,43 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const mimeType = resolveMime(file);
     if (!mimeType) {
-      return NextResponse.json({ error: `File type "${file.type || "(empty)"}" not allowed. Use PNG, JPEG, WebP, SVG, or GIF` }, { status: 415 });
+      return NextResponse.json({ error: `File type not allowed. Use PNG, JPEG, WebP, SVG, or GIF` }, { status: 415 });
     }
 
-    // Delete existing logo from storage
-    if (company.logoUrl) {
-      const existingPath = company.logoUrl.split(`/${LOGOS_BUCKET}/`)[1];
-      if (existingPath) {
-        const { error: removeErr } = await getSupabaseAdmin().storage.from(LOGOS_BUCKET).remove([existingPath]);
-        if (removeErr) console.warn("[logo] remove old file:", removeErr.message);
-      }
-    }
-
-    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase() : ".png";
-    const storagePath = `company-${id}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
+    let logoUrl: string;
 
-    console.log(`[logo] uploading to bucket="${LOGOS_BUCKET}" path="${storagePath}" mime="${mimeType}" size=${buffer.length}`);
+    if (hasSupabaseStorage()) {
+      // Upload to Supabase Storage bucket
+      if (company.logoUrl && company.logoUrl.startsWith("http")) {
+        const existingPath = company.logoUrl.split(`/${LOGOS_BUCKET}/`)[1];
+        if (existingPath) {
+          await getSupabaseAdmin().storage.from(LOGOS_BUCKET).remove([existingPath]);
+        }
+      }
 
-    const { data: uploadData, error: uploadError } = await getSupabaseAdmin()
-      .storage
-      .from(LOGOS_BUCKET)
-      .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase() : ".png";
+      const storagePath = `company-${id}${ext}`;
 
-    if (uploadError) {
-      console.error("[logo] upload error:", JSON.stringify(uploadError));
-      return NextResponse.json({ error: "Upload failed", detail: uploadError.message }, { status: 500 });
+      const { error: uploadError } = await getSupabaseAdmin()
+        .storage
+        .from(LOGOS_BUCKET)
+        .upload(storagePath, buffer, { contentType: mimeType, upsert: true });
+
+      if (uploadError) {
+        console.error("[logo] Supabase upload error:", uploadError);
+        return NextResponse.json({ error: "Upload failed", detail: uploadError.message }, { status: 500 });
+      }
+
+      logoUrl = getPublicLogoUrl(storagePath);
+      console.log("[logo] stored in Supabase Storage:", logoUrl);
+    } else {
+      // Fallback: store as base64 data URL directly in the database
+      logoUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
+      console.log("[logo] SUPABASE_URL/SERVICE_ROLE_KEY not set — storing as base64 in DB");
     }
 
-    console.log("[logo] upload success:", uploadData);
-
-    const logoUrl = getPublicLogoUrl(storagePath);
     await getPrisma().company.update({ where: { id }, data: { logoUrl } });
-
     return NextResponse.json({ logoUrl }, { status: 200 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -101,7 +103,8 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     const company = await getPrisma().company.findUnique({ where: { id } });
     if (!company) return NextResponse.json({ error: "Company not found" }, { status: 404 });
 
-    if (company.logoUrl) {
+    // Remove from Supabase Storage only if it was stored there
+    if (company.logoUrl && company.logoUrl.startsWith("http") && hasSupabaseStorage()) {
       const existingPath = company.logoUrl.split(`/${LOGOS_BUCKET}/`)[1];
       if (existingPath) {
         await getSupabaseAdmin().storage.from(LOGOS_BUCKET).remove([existingPath]);
