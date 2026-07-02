@@ -18,6 +18,7 @@ export default async function CompaniesPage() {
     name: company.name,
     description: company.description,
     active: company.active,
+    logoUrl: company.logoUrl,
     _count: company._count,
   }));
   const canManage = session?.user.role === "ADMIN";

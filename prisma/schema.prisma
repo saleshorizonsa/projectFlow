@@ -508,6 +508,7 @@ model Company {
   name           String
   description    String?
   active         Boolean           @default(true)
+  logoUrl        String?
   projects       ProjectCompany[]
   assets         ITAssetCompany[]
   users          UserCompany[]
