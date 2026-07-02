@@ -921,7 +921,8 @@ function EmployeeEditDialog({
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        setMessage(body?.error ?? "Employee update failed.");
+        const details = body?.details ? Object.entries(body.details as Record<string, string[]>).map(([f, msgs]) => `${f}: ${(msgs as string[]).join(", ")}`).join(" · ") : null;
+        setMessage(details ? `${body?.error ?? "Update failed"} — ${details}` : (body?.error ?? "Employee update failed. Please try again."));
         return;
       }
       setOpen(false);
