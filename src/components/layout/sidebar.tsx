@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart2, BarChart3, Bell, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,20 @@ const navSections = [
   },
 ];
 
+type BadgeCounts = {
+  openIncidents?: number;
+  criticalVulns?: number;
+  highRisks?: number;
+  overdueTasks?: number;
+};
+
+const BADGE_MAP: Record<string, keyof BadgeCounts> = {
+  "/incident-response": "openIncidents",
+  "/vulnerability-management": "criticalVulns",
+  "/risk-register": "highRisks",
+  "/tasks": "overdueTasks",
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -105,6 +119,15 @@ export function Sidebar() {
     Control: true,
     "Task Management": true,
   });
+  const [badges, setBadges] = useState<BadgeCounts>({});
+
+  useEffect(() => {
+    fetch("/api/badges")
+      .then((r) => r.json())
+      .then(setBadges)
+      .catch(() => {});
+  }, []);
+
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSections = useMemo(() => {
     if (!normalizedQuery) return navSections;
@@ -167,6 +190,8 @@ export function Sidebar() {
                   )}
                   {sectionOpen && section.items.map((item) => {
               const active = exactRoutes.includes(item.href) ? pathname === item.href : pathname.startsWith(item.href);
+              const badgeKey = BADGE_MAP[item.href];
+              const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
               return (
                 <Link
                   key={item.href}
@@ -180,6 +205,11 @@ export function Sidebar() {
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && badgeCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                      {badgeCount > 99 ? "99+" : badgeCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

@@ -113,3 +113,40 @@ export async function getDashboardData(companyId?: string) {
     resourcePlanning,
   };
 }
+
+export async function getSecurityPostureData(companyId?: string) {
+  const prisma = getPrisma();
+  // companyId is reserved for future multi-tenant scoping
+  void companyId;
+  try {
+    const [
+      openIncidents,
+      criticalIncidents,
+      criticalVulns,
+      highVulns,
+      highRisks,
+      openPolicies,
+    ] = await Promise.all([
+      prisma.incident.count({ where: { status: { notIn: ["RECOVERED", "CLOSED"] } } }),
+      prisma.incident.count({ where: { severity: "CRITICAL", status: { notIn: ["RECOVERED", "CLOSED"] } } }),
+      prisma.vulnerability.count({ where: { severity: "CRITICAL", status: { notIn: ["REMEDIATED", "ACCEPTED_RISK", "FALSE_POSITIVE"] } } }).catch(() => 0),
+      prisma.vulnerability.count({ where: { severity: "HIGH", status: { notIn: ["REMEDIATED", "ACCEPTED_RISK", "FALSE_POSITIVE"] } } }).catch(() => 0),
+      prisma.risk.count({ where: { riskScore: { gte: 15 }, status: { notIn: ["CLOSED", "RESIDUAL"] } } }).catch(() => 0),
+      prisma.policy.count({ where: { status: { in: ["DRAFT", "UNDER_REVIEW"] } } }).catch(() => 0),
+    ]);
+
+    // Score: start at 100, deduct points for issues
+    let score = 100;
+    score -= criticalIncidents * 10;
+    score -= (openIncidents - criticalIncidents) * 3;
+    score -= criticalVulns * 8;
+    score -= highVulns * 3;
+    score -= highRisks * 5;
+    score -= openPolicies * 2;
+    score = Math.max(0, Math.min(100, score));
+
+    return { score, openIncidents, criticalIncidents, criticalVulns, highVulns, highRisks, openPolicies };
+  } catch {
+    return { score: null, openIncidents: 0, criticalIncidents: 0, criticalVulns: 0, highVulns: 0, highRisks: 0, openPolicies: 0 };
+  }
+}

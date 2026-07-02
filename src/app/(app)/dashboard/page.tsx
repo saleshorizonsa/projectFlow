@@ -1,17 +1,20 @@
-import { AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Gauge, TriangleAlert, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Gauge, Shield, TriangleAlert, Users } from "lucide-react";
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { selectedCompanyId, type CompanySearchParams } from "@/lib/company-filter";
-import { getDashboardData } from "@/lib/dashboard";
+import { getDashboardData, getSecurityPostureData } from "@/lib/dashboard";
 import { formatEnum, trafficLight } from "@/lib/utils";
 
 const statIcons = [FolderKanban, Gauge, AlertTriangle, CheckCircle2, TriangleAlert, AlertTriangle, CalendarClock, ClipboardList];
 
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const companyId = await selectedCompanyId(searchParams);
-  const data = await getDashboardData(companyId);
+  const [data, secPosture] = await Promise.all([
+    getDashboardData(companyId),
+    getSecurityPostureData(companyId),
+  ]);
   const redProjects = data.projectHealth.filter((project) => project.health === "red").length;
   const yellowProjects = data.projectHealth.filter((project) => project.health === "yellow").length;
   const greenProjects = data.projectHealth.filter((project) => project.health === "green").length;
@@ -25,6 +28,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
     ["Upcoming Deadlines", data.stats.upcomingDeadlines],
     ["Tasks Due This Week", data.stats.tasksDueThisWeek],
   ];
+
+  const score = secPosture.score;
+  const scoreColor = (score === null ? "secondary" : score >= 80 ? "success" : score >= 60 ? "warning" : "destructive") as "secondary" | "success" | "warning" | "destructive";
+  const scoreLabel = score === null ? "Unknown" : score >= 80 ? "Good" : score >= 60 ? "Fair" : "At Risk";
 
   return (
     <div className="space-y-4">
@@ -62,6 +69,51 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           );
         })}
         </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="sm:col-span-2">
+          <CardContent className="flex items-center gap-6 p-5">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-primary/20 bg-primary/5">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Security Posture</div>
+              <div className="flex items-baseline gap-3">
+                <span className="text-4xl font-bold">{score ?? "—"}</span>
+                <span className="text-sm text-muted-foreground">/100</span>
+                <Badge variant={scoreColor}>{scoreLabel}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Based on open incidents, vulnerabilities, and risk posture</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Open Incidents</p>
+            <p className="mt-1 text-2xl font-bold">{secPosture.openIncidents}</p>
+            {secPosture.criticalIncidents > 0 && <p className="mt-0.5 text-xs text-destructive">{secPosture.criticalIncidents} critical</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Critical Vulns</p>
+            <p className="mt-1 text-2xl font-bold">{secPosture.criticalVulns}</p>
+            {secPosture.highVulns > 0 && <p className="mt-0.5 text-xs text-orange-600 dark:text-orange-400">{secPosture.highVulns} high</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">High Risks</p>
+            <p className="mt-1 text-2xl font-bold">{secPosture.highRisks}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Policies Pending</p>
+            <p className="mt-1 text-2xl font-bold">{secPosture.openPolicies}</p>
+          </CardContent>
+        </Card>
       </section>
 
       <AnalyticsCharts {...data.analytics} />
