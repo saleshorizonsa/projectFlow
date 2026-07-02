@@ -24,14 +24,14 @@ export function DiscardChangesDialog({
     <AlertDialog open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+          <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
           <AlertDialogDescription>
-            You have unsaved changes. Do you want to discard them and close?
+            You have unsaved changes that will be lost if you leave.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onKeep}>No, keep editing</AlertDialogCancel>
-          <AlertDialogAction onClick={onDiscard}>Yes, discard</AlertDialogAction>
+          <AlertDialogCancel onClick={onKeep}>Stay</AlertDialogCancel>
+          <AlertDialogAction onClick={onDiscard} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Leave &amp; Discard</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

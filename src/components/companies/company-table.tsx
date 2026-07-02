@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Building2, Pencil, PowerOff, Trash2, Upload, X } from "lucide-react";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -171,10 +172,14 @@ function CompanyEditDialog({ company }: { company: CompanyRow }) {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [active, setActive] = useState(company.active);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   function handleOpen(v: boolean) {
+    if (!v && isDirty) { setDiscardOpen(true); return; }
     setOpen(v);
-    if (v) { setActive(company.active); setMessage(null); }
+    if (v) { setActive(company.active); setMessage(null); setIsDirty(false); }
+    if (!v) { setIsDirty(false); }
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -200,6 +205,7 @@ function CompanyEditDialog({ company }: { company: CompanyRow }) {
       }
 
       toast.success("Company updated");
+      setIsDirty(false);
       setOpen(false);
       router.refresh();
     });
@@ -218,11 +224,11 @@ function CompanyEditDialog({ company }: { company: CompanyRow }) {
         <div className="grid gap-4">
           <LogoUploader company={company} onUpdate={() => router.refresh()} />
           <form className="grid gap-4" onSubmit={onSubmit}>
-            <Field label="Code" id="code"><Input id="code" name="code" defaultValue={company.code} /></Field>
-            <Field label="Name" id="name"><Input id="name" name="name" defaultValue={company.name} /></Field>
-            <Field label="Description" id="description"><Input id="description" name="description" defaultValue={company.description ?? ""} /></Field>
+            <Field label="Code" id="code"><Input id="code" name="code" defaultValue={company.code} onChange={() => setIsDirty(true)} /></Field>
+            <Field label="Name" id="name"><Input id="name" name="name" defaultValue={company.name} onChange={() => setIsDirty(true)} /></Field>
+            <Field label="Description" id="description"><Input id="description" name="description" defaultValue={company.description ?? ""} onChange={() => setIsDirty(true)} /></Field>
             <label className="flex items-center gap-2 text-sm font-medium">
-              <input className="h-4 w-4 rounded border-input" type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+              <input className="h-4 w-4 rounded border-input" type="checkbox" checked={active} onChange={(event) => { setActive(event.target.checked); setIsDirty(true); }} />
               Active for project selection
             </label>
             {message && <p className="text-sm text-destructive">{message}</p>}
@@ -230,6 +236,11 @@ function CompanyEditDialog({ company }: { company: CompanyRow }) {
           </form>
         </div>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }

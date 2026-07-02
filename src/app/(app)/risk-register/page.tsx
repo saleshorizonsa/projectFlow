@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, RefreshCw } from "lucide-react";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type Risk = {
   id: string;
@@ -126,13 +127,21 @@ function AddRiskDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [form, setForm] = useState({
     riskId: "", title: "", description: "", category: "Cybersecurity",
     likelihood: "3", impact: "3", treatment: "MITIGATE", treatmentPlan: "",
     status: "OPEN", notes: "", dueDate: "",
   });
 
-  function set(k: string, v: string) { setForm(p => ({ ...p, [k]: v })); }
+  function set(k: string, v: string) { setForm(p => ({ ...p, [k]: v })); setIsDirty(true); }
+
+  function handleOpenChange(v: boolean) {
+    if (!v && isDirty) { setDiscardOpen(true); return; }
+    if (!v) { setIsDirty(false); }
+    setOpen(v);
+  }
 
   function submit() {
     setError(null);
@@ -150,13 +159,14 @@ function AddRiskDialog({ onCreated }: { onCreated: () => void }) {
       });
       if (!res.ok) { const b = await res.json().catch(() => null); setError(b?.error ?? "Failed"); return; }
       setOpen(false);
+      setIsDirty(false);
       setForm({ riskId: "", title: "", description: "", category: "Cybersecurity", likelihood: "3", impact: "3", treatment: "MITIGATE", treatmentPlan: "", status: "OPEN", notes: "", dueDate: "" });
       onCreated();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Risk</Button></DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>Register New Risk</DialogTitle></DialogHeader>
@@ -236,6 +246,11 @@ function AddRiskDialog({ onCreated }: { onCreated: () => void }) {
           </div>
         </div>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }

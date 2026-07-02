@@ -1,6 +1,6 @@
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { CompanyFilter } from "@/components/layout/company-filter";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -25,14 +25,9 @@ export async function TopNav() {
           <Avatar>
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
-          <form className="hidden sm:block"
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <Button variant="outline" size="sm">Sign out</Button>
-          </form>
+          <div className="hidden sm:block">
+            <SignOutButton />
+          </div>
         </div>
       </div>
     </header>

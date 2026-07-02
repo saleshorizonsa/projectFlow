@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen, Check, ChevronRight, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type PlaybookStep = {
   order: number;
@@ -59,8 +60,16 @@ function AddPlaybookDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [form, setForm] = useState({ playbookId: "", title: "", type: "OTHER", description: "" });
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setIsDirty(true); };
+
+  function handleOpenChange(v: boolean) {
+    if (!v && isDirty) { setDiscardOpen(true); return; }
+    if (!v) { setIsDirty(false); }
+    setOpen(v);
+  }
 
   function submit() {
     setError(null);
@@ -72,13 +81,14 @@ function AddPlaybookDialog({ onCreated }: { onCreated: () => void }) {
       });
       if (!res.ok) { const b = await res.json().catch(() => null); setError(b?.error ?? "Failed"); return; }
       setOpen(false);
+      setIsDirty(false);
       setForm({ playbookId: "", title: "", type: "OTHER", description: "" });
       onCreated();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" />New Playbook</Button></DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Create Incident Playbook</DialogTitle></DialogHeader>
@@ -98,6 +108,11 @@ function AddPlaybookDialog({ onCreated }: { onCreated: () => void }) {
           <Button onClick={submit} disabled={pending || !form.title}>{pending ? "Creating…" : "Create Playbook"}</Button>
         </div>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }

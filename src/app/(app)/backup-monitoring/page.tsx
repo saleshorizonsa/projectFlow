@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CheckCircle2, Plus, RefreshCw, XCircle, AlertCircle, Clock } from "lucide-react";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type BackupLog = {
   id: string;
@@ -69,8 +70,16 @@ function AddJobDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [form, setForm] = useState({ jobId: "", name: "", frequency: "DAILY", rpoHours: "24", retentionDays: "30", notes: "" });
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setIsDirty(true); };
+
+  function handleOpenChange(v: boolean) {
+    if (!v && isDirty) { setDiscardOpen(true); return; }
+    if (!v) { setIsDirty(false); }
+    setOpen(v);
+  }
 
   function submit() {
     setError(null);
@@ -82,13 +91,14 @@ function AddJobDialog({ onCreated }: { onCreated: () => void }) {
       });
       if (!res.ok) { const b = await res.json().catch(() => null); setError(b?.error ?? "Failed"); return; }
       setOpen(false);
+      setIsDirty(false);
       setForm({ jobId: "", name: "", frequency: "DAILY", rpoHours: "24", retentionDays: "30", notes: "" });
       onCreated();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Backup Job</Button></DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>Register Backup Job</DialogTitle></DialogHeader>
@@ -109,6 +119,11 @@ function AddJobDialog({ onCreated }: { onCreated: () => void }) {
           <div className="md:col-span-2"><Button onClick={submit} disabled={pending || !form.name}>{pending ? "Saving…" : "Register Job"}</Button></div>
         </div>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }

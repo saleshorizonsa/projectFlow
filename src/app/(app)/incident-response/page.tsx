@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle2, ChevronRight, Clock, Columns2, GripVertical, LayoutList, Plus, RefreshCw, Send, Shield } from "lucide-react";
+import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type Incident = {
   id: string;
@@ -79,11 +80,19 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [form, setForm] = useState({
     incidentId: "", title: "", description: "", type: "OTHER", severity: "HIGH",
     affectedSystems: "", impact: "",
   });
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setIsDirty(true); };
+
+  function handleOpenChange(v: boolean) {
+    if (!v && isDirty) { setDiscardOpen(true); return; }
+    if (!v) { setIsDirty(false); }
+    setOpen(v);
+  }
 
   function submit() {
     setError(null);
@@ -101,6 +110,7 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
         return;
       }
       setOpen(false);
+      setIsDirty(false);
       setForm({ incidentId: "", title: "", description: "", type: "OTHER", severity: "HIGH", affectedSystems: "", impact: "" });
       toast.success("Incident reported");
       onCreated();
@@ -108,7 +118,7 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" />Report Incident</Button></DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader><DialogTitle>Report Security Incident</DialogTitle></DialogHeader>
@@ -138,6 +148,11 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
           <Button onClick={submit} disabled={pending || !form.title}>{pending ? "Reporting…" : "Report Incident"}</Button>
         </div>
       </DialogContent>
+      <DiscardChangesDialog
+        open={discardOpen}
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={() => { setDiscardOpen(false); setIsDirty(false); setOpen(false); }}
+      />
     </Dialog>
   );
 }
