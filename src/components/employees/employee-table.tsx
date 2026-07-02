@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, EyeOff, FileText, Link2, Pencil, Trash2, UserX, X } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, FileText, Link2, Palmtree, Pencil, RotateCcw, Trash2, UserX, X } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,14 +32,18 @@ type EmployeeRow = {
   ipAddress: string | null;
   vpnUserId: string | null;
   vpnPassword: string | null;
+  leaveStartDate: string | null;
+  leaveReturnDate: string | null;
+  leaveReason: string | null;
   exitDate: string | null;
   offboardingNotes: string | null;
   companies: CompanyOption[];
   assets: AssetItem[];
   licenses: LicenseItem[];
+  openTickets: number;
 };
 
-const statuses = ["ACTIVE", "INACTIVE", "EXITED"];
+const statuses = ["ACTIVE", "INACTIVE", "ON_LEAVE", "EXITED"];
 
 export function EmployeeTable({
   employees,
@@ -64,9 +69,10 @@ export function EmployeeTable({
     router.refresh();
   }
 
-  function statusVariant(s: string): "success" | "destructive" | "secondary" {
+  function statusVariant(s: string): "success" | "destructive" | "secondary" | "warning" {
     if (s === "ACTIVE") return "success";
     if (s === "EXITED") return "destructive";
+    if (s === "ON_LEAVE") return "warning";
     return "secondary";
   }
 
@@ -96,6 +102,9 @@ export function EmployeeTable({
                     <div className="text-xs text-muted-foreground">
                       {employee.email ?? "No email"} / {employee.phone ?? "No phone"}
                     </div>
+                    {employee.status === "ON_LEAVE" && employee.leaveReturnDate && (
+                      <div className="text-xs text-amber-600 dark:text-amber-400">Returns: {employee.leaveReturnDate}</div>
+                    )}
                     {employee.exitDate && (
                       <div className="text-xs text-orange-600">Exited: {employee.exitDate}</div>
                     )}
@@ -129,10 +138,16 @@ export function EmployeeTable({
                           <FileText className="h-4 w-4" /> Report
                         </Link>
                       </Button>
-                      {canManage && employee.status !== "EXITED" && (
+                      {canManage && employee.status === "ACTIVE" && (
                         <EmployeeAssignDialog employee={employee} />
                       )}
-                      {canManage && employee.status !== "EXITED" && (
+                      {canManage && employee.status === "ACTIVE" && (
+                        <EmployeeSetOnLeaveDialog employee={employee} />
+                      )}
+                      {canManage && employee.status === "ON_LEAVE" && (
+                        <MarkReturnedButton employee={employee} />
+                      )}
+                      {canManage && employee.status === "ACTIVE" && (
                         <EmployeeOffboardDialog employee={employee} />
                       )}
                       {canManage && <EmployeeEditDialog employee={employee} companies={companies} />}
@@ -166,6 +181,9 @@ export function EmployeeTable({
                   <div className="truncate text-xs text-muted-foreground">
                     {employee.jobTitle} / {employee.department}
                   </div>
+                  {employee.status === "ON_LEAVE" && employee.leaveReturnDate && (
+                    <div className="text-xs text-amber-600 dark:text-amber-400">Returns: {employee.leaveReturnDate}</div>
+                  )}
                   {employee.exitDate && (
                     <div className="text-xs text-orange-600">Exited: {employee.exitDate}</div>
                   )}
@@ -193,8 +211,10 @@ export function EmployeeTable({
                     <FileText className="h-4 w-4" /> Report
                   </Link>
                 </Button>
-                {canManage && employee.status !== "EXITED" && <EmployeeAssignDialog employee={employee} />}
-                {canManage && employee.status !== "EXITED" && <EmployeeOffboardDialog employee={employee} />}
+                {canManage && employee.status === "ACTIVE" && <EmployeeAssignDialog employee={employee} />}
+                {canManage && employee.status === "ACTIVE" && <EmployeeSetOnLeaveDialog employee={employee} />}
+                {canManage && employee.status === "ON_LEAVE" && <MarkReturnedButton employee={employee} />}
+                {canManage && employee.status === "ACTIVE" && <EmployeeOffboardDialog employee={employee} />}
                 {canManage && <EmployeeEditDialog employee={employee} companies={companies} />}
                 {canManage && (
                   <Button size="sm" variant="outline" onClick={() => deleteEmployee(employee)}>
@@ -207,6 +227,324 @@ export function EmployeeTable({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Mark Returned ─────────────────────────────────────────────────────────────
+
+function MarkReturnedButton({ employee }: { employee: EmployeeRow }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  function markReturned() {
+    startTransition(async () => {
+      const res = await fetch(`/api/employees/${employee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACTIVE", leaveStartDate: null, leaveReturnDate: null, leaveReason: null }),
+      });
+      if (res.ok) {
+        toast.success(`${employee.name} is back — status set to Active`);
+        router.refresh();
+      } else {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error ?? "Failed to update status.");
+      }
+    });
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={markReturned}
+      className="border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-800 dark:text-green-400"
+    >
+      <RotateCcw className="h-4 w-4" /> Returned
+    </Button>
+  );
+}
+
+// ── Set on Leave Wizard ───────────────────────────────────────────────────────
+
+const LEAVE_REASONS = ["Annual Leave", "Sick Leave", "Maternity / Paternity Leave", "Training", "Study Leave", "Other"];
+
+function EmployeeSetOnLeaveDialog({ employee }: { employee: EmployeeRow }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [pendingAssets, setPendingAssets] = useState<AssetItem[]>([]);
+  const [pendingLicenses, setPendingLicenses] = useState<LicenseItem[]>([]);
+  const [leaveStart, setLeaveStart] = useState("");
+  const [leaveReturn, setLeaveReturn] = useState("");
+  const [leaveReason, setLeaveReason] = useState("Annual Leave");
+  const [leaveNotes, setLeaveNotes] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+
+  function handleOpen(v: boolean) {
+    if (v) {
+      setStep(0);
+      setPendingAssets([...employee.assets]);
+      setPendingLicenses([...employee.licenses]);
+      setLeaveStart(new Date().toISOString().split("T")[0]);
+      setLeaveReturn("");
+      setLeaveReason("Annual Leave");
+      setLeaveNotes("");
+      setMessage(null);
+    }
+    setOpen(v);
+  }
+
+  function returnAsset(assetId: string) {
+    startTransition(async () => {
+      const res = await fetch(`/api/it-assets/${assetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: "" }),
+      });
+      if (res.ok) { setPendingAssets(prev => prev.filter(a => a.id !== assetId)); router.refresh(); }
+      else setMessage("Failed to unlink asset.");
+    });
+  }
+
+  function returnAllAssets() {
+    startTransition(async () => {
+      await Promise.all(pendingAssets.map(a =>
+        fetch(`/api/it-assets/${a.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ employeeId: "" }) })
+      ));
+      setPendingAssets([]);
+      router.refresh();
+    });
+  }
+
+  function revokeLicense(licenseId: string) {
+    startTransition(async () => {
+      const res = await fetch(`/api/it-licenses/${licenseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: "" }),
+      });
+      if (res.ok) { setPendingLicenses(prev => prev.filter(l => l.id !== licenseId)); router.refresh(); }
+      else setMessage("Failed to revoke license.");
+    });
+  }
+
+  function revokeAllLicenses() {
+    startTransition(async () => {
+      await Promise.all(pendingLicenses.map(l =>
+        fetch(`/api/it-licenses/${l.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ employeeId: "" }) })
+      ));
+      setPendingLicenses([]);
+      router.refresh();
+    });
+  }
+
+  function complete() {
+    if (!leaveReturn) { setMessage("Please set an expected return date."); return; }
+    setMessage(null);
+    startTransition(async () => {
+      const res = await fetch(`/api/employees/${employee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "ON_LEAVE",
+          leaveStartDate: leaveStart || null,
+          leaveReturnDate: leaveReturn || null,
+          leaveReason: leaveNotes ? `${leaveReason} — ${leaveNotes}` : leaveReason,
+        }),
+      });
+      if (!res.ok) { setMessage("Failed to set leave status."); return; }
+      toast.success(`${employee.name} is on leave until ${leaveReturn}`);
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
+  const STEPS = ["Clearance", "Set Dates", "Confirm"];
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-700 dark:text-amber-400"
+        >
+          <Palmtree className="h-4 w-4" /> On Leave
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Set Employee on Leave</DialogTitle>
+          <DialogDescription>{employee.employeeId} / {employee.name}</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex gap-1.5">
+          {STEPS.map((label, i) => (
+            <div key={i} className={cn(
+              "flex-1 rounded-full py-1.5 text-center text-xs font-medium",
+              i === step ? "bg-amber-500 text-white" : i < step ? "bg-muted text-muted-foreground" : "bg-muted/40 text-muted-foreground/60",
+            )}>
+              {i < step ? "✓ " : ""}{label}
+            </div>
+          ))}
+        </div>
+
+        {/* Step 0 — Clearance */}
+        {step === 0 && (
+          <div className="space-y-4">
+            {employee.openTickets > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/20">
+                <span className="mt-0.5 text-amber-600">⚠</span>
+                <span className="text-amber-800 dark:text-amber-300">
+                  <strong>{employee.openTickets}</strong> open support ticket{employee.openTickets !== 1 ? "s" : ""} assigned — reassign via IT Support before leave starts.
+                </span>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Assets to return? <span className="font-normal text-muted-foreground">({pendingAssets.length} held)</span></p>
+              {pendingAssets.length === 0 ? (
+                <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" /> No assets to return.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    {pendingAssets.map(asset => (
+                      <div key={asset.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                        <div className="min-w-0">
+                          <span className="font-medium">{asset.assetTag}</span>
+                          <span className="ml-2 truncate text-muted-foreground">{asset.name}</span>
+                          <Badge variant="secondary" className="ml-2 text-xs">{formatEnum(asset.type)}</Badge>
+                        </div>
+                        <Button size="sm" variant="outline" className="ml-2 shrink-0" disabled={pending} onClick={() => returnAsset(asset.id)}>Return</Button>
+                      </div>
+                    ))}
+                  </div>
+                  {pendingAssets.length > 1 && (
+                    <Button size="sm" variant="outline" className="w-full" disabled={pending} onClick={returnAllAssets}>Return All ({pendingAssets.length})</Button>
+                  )}
+                  <p className="text-xs text-muted-foreground">You can leave assets assigned — they stay with the employee during leave.</p>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Licenses to free up? <span className="font-normal text-muted-foreground">({pendingLicenses.length} held)</span></p>
+              {pendingLicenses.length === 0 ? (
+                <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" /> No licenses to free.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    {pendingLicenses.map(license => (
+                      <div key={license.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                        <div className="min-w-0">
+                          <span className="font-medium">{license.licenseId}</span>
+                          <span className="ml-2 truncate text-muted-foreground">{license.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{license.vendor}</span>
+                        </div>
+                        <Button size="sm" variant="outline" className="ml-2 shrink-0" disabled={pending} onClick={() => revokeLicense(license.id)}>Free</Button>
+                      </div>
+                    ))}
+                  </div>
+                  {pendingLicenses.length > 1 && (
+                    <Button size="sm" variant="outline" className="w-full" disabled={pending} onClick={revokeAllLicenses}>Free All ({pendingLicenses.length})</Button>
+                  )}
+                  <p className="text-xs text-muted-foreground">Freeing a license allows it to be reassigned while the employee is away.</p>
+                </>
+              )}
+            </div>
+
+            {message && <p className="text-sm text-destructive">{message}</p>}
+            <div className="flex justify-between gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={() => { setMessage(null); setStep(1); }}>Next →</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1 — Set Dates */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="leave-reason">Leave Type *</Label>
+              <Select value={leaveReason} onValueChange={setLeaveReason}>
+                <SelectTrigger id="leave-reason"><SelectValue /></SelectTrigger>
+                <SelectContent>{LEAVE_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="leave-start">Start Date *</Label>
+                <Input id="leave-start" type="date" value={leaveStart} onChange={e => setLeaveStart(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="leave-return">Expected Return *</Label>
+                <Input id="leave-return" type="date" value={leaveReturn} onChange={e => setLeaveReturn(e.target.value)} min={leaveStart} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="leave-notes">Notes (optional)</Label>
+              <textarea
+                id="leave-notes"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                rows={2}
+                placeholder="e.g. Pre-approved by HR on 01/07/2026"
+                value={leaveNotes}
+                onChange={e => setLeaveNotes(e.target.value)}
+              />
+            </div>
+            {message && <p className="text-sm text-destructive">{message}</p>}
+            <div className="flex justify-between gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setMessage(null); setStep(0); }}>← Back</Button>
+              <Button size="sm" onClick={() => { if (!leaveReturn) { setMessage("Set an expected return date."); return; } setMessage(null); setStep(2); }}>Next →</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2 — Confirm */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <div className="rounded-md border bg-amber-50 p-4 text-sm dark:bg-amber-950/20">
+              <p className="font-semibold text-amber-800 dark:text-amber-400">Leave summary</p>
+              <ul className="mt-2 space-y-1.5 text-muted-foreground">
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />Status → <strong>On Leave</strong></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />Reason: <strong>{leaveReason}</strong></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />Dates: <strong>{leaveStart}</strong> → <strong>{leaveReturn}</strong></li>
+                {pendingAssets.length > 0 && (
+                  <li className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <X className="h-3.5 w-3.5 shrink-0" />{pendingAssets.length} asset(s) remain assigned during leave
+                  </li>
+                )}
+                {pendingLicenses.length > 0 && (
+                  <li className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <X className="h-3.5 w-3.5 shrink-0" />{pendingLicenses.length} license(s) remain assigned during leave
+                  </li>
+                )}
+              </ul>
+              {leaveNotes && <p className="mt-2 text-xs text-muted-foreground">Notes: {leaveNotes}</p>}
+            </div>
+            {message && <p className="text-sm text-destructive">{message}</p>}
+            <div className="flex justify-between gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setMessage(null); setStep(1); }}>← Back</Button>
+              <Button
+                size="sm"
+                disabled={pending}
+                className="bg-amber-500 text-white hover:bg-amber-600"
+                onClick={complete}
+              >
+                {pending ? "Setting leave…" : "Confirm Leave"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

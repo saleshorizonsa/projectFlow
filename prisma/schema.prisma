@@ -124,6 +124,7 @@ enum ITMaintenanceStatus {
 enum EmployeeStatus {
   ACTIVE
   INACTIVE
+  ON_LEAVE
   EXITED
 }
 
@@ -471,6 +472,9 @@ model Employee {
   ipAddress      String?
   vpnUserId      String?
   vpnPassword      String?
+  leaveStartDate   DateTime?
+  leaveReturnDate  DateTime?
+  leaveReason      String?
   exitDate         DateTime?
   offboardingNotes String?
   companies        EmployeeCompany[]

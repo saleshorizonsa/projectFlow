@@ -21,6 +21,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
         companies: { include: { company: true }, orderBy: { company: { name: "asc" } } },
         assets: { orderBy: { assetTag: "asc" } },
         licenses: { orderBy: { expiryDate: "asc" } },
+        _count: { select: { supportTickets: { where: { status: { notIn: ["RESOLVED", "CLOSED"] } } } } },
       },
       orderBy: { name: "asc" },
     }),
@@ -40,14 +41,19 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     ipAddress: employee.ipAddress,
     vpnUserId: employee.vpnUserId,
     vpnPassword: safeDecryptField(employee.vpnPassword),
+    leaveStartDate: employee.leaveStartDate ? employee.leaveStartDate.toISOString().split("T")[0] : null,
+    leaveReturnDate: employee.leaveReturnDate ? employee.leaveReturnDate.toISOString().split("T")[0] : null,
+    leaveReason: employee.leaveReason,
     exitDate: employee.exitDate ? employee.exitDate.toISOString().split("T")[0] : null,
     offboardingNotes: employee.offboardingNotes,
     companies: employee.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
     assets: employee.assets.map((asset) => ({ id: asset.id, assetTag: asset.assetTag, name: asset.name, type: asset.type })),
     licenses: employee.licenses.map((license) => ({ id: license.id, licenseId: license.licenseId, name: license.name, vendor: license.vendor })),
+    openTickets: employee._count.supportTickets,
   }));
   const canManage = session?.user.role === "ADMIN" || session?.user.role === "PROJECT_MANAGER";
   const activeEmployees = rows.filter((employee) => employee.status === "ACTIVE").length;
+  const onLeaveEmployees = rows.filter((employee) => employee.status === "ON_LEAVE").length;
   const assignedAssets = rows.reduce((total, employee) => total + employee.assets.length, 0);
   const assignedLicenses = rows.reduce((total, employee) => total + employee.licenses.length, 0);
   const departments = new Set(rows.map((employee) => employee.department).filter(Boolean)).size;
@@ -68,9 +74,10 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
         </CardHeader>
       </Card>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Metric title="Employees" value={rows.length} tone="track" />
         <Metric title="Active" value={activeEmployees} tone="ok" />
+        <Metric title="On Leave" value={onLeaveEmployees} tone={onLeaveEmployees ? "warning" : "ok"} />
         <Metric title="Assets Issued" value={assignedAssets} tone={assignedAssets ? "track" : "review"} />
         <Metric title="Licenses Assigned" value={assignedLicenses} tone={assignedLicenses ? "track" : "review"} />
       </section>
@@ -195,7 +202,9 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
   );
 }
 
-function Metric({ title, value, tone }: { title: string; value: number; tone: "ok" | "review" | "track" }) {
+function Metric({ title, value, tone }: { title: string; value: number; tone: "ok" | "review" | "track" | "warning" }) {
+  const variant = tone === "ok" ? "success" : tone === "review" ? "secondary" : tone === "warning" ? "warning" : "secondary";
+  const label = tone === "ok" ? "OK" : tone === "review" ? "Review" : tone === "warning" ? "On Leave" : "Track";
   return (
     <Card>
       <CardHeader className="space-y-0 pb-2">
@@ -203,7 +212,7 @@ function Metric({ title, value, tone }: { title: string; value: number; tone: "o
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-3">
         <div className="text-3xl font-semibold leading-none">{value}</div>
-        <Badge variant={tone === "ok" ? "success" : tone === "review" ? "warning" : "secondary"}>{tone === "ok" ? "OK" : tone === "review" ? "Review" : "Track"}</Badge>
+        <Badge variant={variant}>{label}</Badge>
       </CardContent>
     </Card>
   );
