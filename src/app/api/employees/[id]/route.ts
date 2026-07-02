@@ -71,6 +71,13 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 409 },
       );
     }
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("ENCRYPTION_KEY")) {
+      return NextResponse.json(
+        { error: "VPN password encryption is not configured on this server. Leave the VPN Password field blank to save other changes." },
+        { status: 500 },
+      );
+    }
     console.error("Employee PATCH error:", err);
     return NextResponse.json({ error: "Failed to update employee. Please try again." }, { status: 500 });
   }

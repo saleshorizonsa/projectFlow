@@ -1004,6 +1004,7 @@ function EmployeeEditDialog({
                 type={showVpnPassword ? "text" : "password"}
                 placeholder={employee.vpnPassword ? "Leave blank to keep current" : "Set VPN password"}
                 className="pr-10"
+                autoComplete="new-password"
               />
               <button
                 type="button"
