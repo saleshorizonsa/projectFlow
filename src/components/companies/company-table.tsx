@@ -119,7 +119,7 @@ function LogoUploader({ company, onUpdate }: { company: CompanyRow; onUpdate: (u
     const res = await fetch(`/api/companies/${company.id}/logo`, { method: "POST", body: fd });
     const body = await res.json().catch(() => null);
     setUploading(false);
-    if (!res.ok) { toast.error(body?.error ?? "Logo upload failed."); return; }
+    if (!res.ok) { toast.error(body?.detail ? `${body.error}: ${body.detail}` : (body?.error ?? "Logo upload failed.")); return; }
     setPreview(body.logoUrl);
     onUpdate(body.logoUrl);
     toast.success("Logo uploaded");

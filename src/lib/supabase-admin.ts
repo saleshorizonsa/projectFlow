@@ -24,12 +24,15 @@ export async function ensureBucket() {
   }
 }
 
-export async function ensureLogosBucket() {
+export async function ensureLogosBucket(): Promise<{ error: string } | null> {
   const supabase = getSupabaseAdmin();
-  const { data: buckets } = await supabase.storage.listBuckets();
+  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+  if (listError) return { error: listError.message };
   if (!buckets?.find((b) => b.name === LOGOS_BUCKET)) {
-    await supabase.storage.createBucket(LOGOS_BUCKET, { public: true });
+    const { error: createError } = await supabase.storage.createBucket(LOGOS_BUCKET, { public: true });
+    if (createError) return { error: createError.message };
   }
+  return null;
 }
 
 export function getPublicLogoUrl(path: string) {
