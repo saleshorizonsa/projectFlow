@@ -1,11 +1,12 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, PowerOff, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,19 +20,17 @@ type CompanyRow = {
   _count: { projects: number };
 };
 
+type LinkedCounts = {
+  projects: number;
+  employees: number;
+  users: number;
+  assets: number;
+  tickets: number;
+  incidents: number;
+  playbooks: number;
+};
+
 export function CompanyTable({ companies, canManage }: { companies: CompanyRow[]; canManage: boolean }) {
-  const router = useRouter();
-
-  async function deleteCompany(company: CompanyRow) {
-    if (!window.confirm(`Delete company "${company.name}"?`)) return;
-    const response = await fetch(`/api/companies/${company.id}`, { method: "DELETE" });
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      window.alert(body?.error ?? "Company delete failed.");
-    }
-    router.refresh();
-  }
-
   return (
     <Table>
       <TableHeader>
@@ -57,7 +56,7 @@ export function CompanyTable({ companies, canManage }: { companies: CompanyRow[]
               <TableCell>
                 <div className="flex justify-end gap-2">
                   <CompanyEditDialog company={company} />
-                  <Button size="icon" variant="ghost" onClick={() => deleteCompany(company)} aria-label="Delete company"><Trash2 className="h-4 w-4" /></Button>
+                  <CompanyDeleteDialog company={company} />
                 </div>
               </TableCell>
             )}
@@ -65,6 +64,151 @@ export function CompanyTable({ companies, canManage }: { companies: CompanyRow[]
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function CompanyDeleteDialog({ company }: { company: CompanyRow }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [links, setLinks] = useState<LinkedCounts | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleOpen(v: boolean) {
+    setOpen(v);
+    if (!v) setLinks(null);
+  }
+
+  function tryDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/companies/${company.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(`"${company.name}" deleted`);
+        setOpen(false);
+        router.refresh();
+        return;
+      }
+      const body = await res.json().catch(() => null);
+      if (res.status === 409 && body?.links) {
+        setLinks(body.links as LinkedCounts);
+      } else {
+        toast.error(body?.error ?? "Delete failed.");
+        setOpen(false);
+      }
+    });
+  }
+
+  function deactivate() {
+    startTransition(async () => {
+      const res = await fetch(`/api/companies/${company.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: false }),
+      });
+      if (res.ok) {
+        toast.success(`"${company.name}" deactivated — data preserved`);
+        setOpen(false);
+        router.refresh();
+      } else {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error ?? "Deactivation failed.");
+      }
+    });
+  }
+
+  function forceDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/companies/${company.id}?force=true`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(`"${company.name}" and all linked data deleted`);
+        setOpen(false);
+        router.refresh();
+      } else {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error ?? "Force delete failed.");
+      }
+    });
+  }
+
+  const hasLinks = links !== null;
+  const linkSummary = hasLinks
+    ? [
+        links.projects > 0 && `${links.projects} project${links.projects !== 1 ? "s" : ""}`,
+        links.employees > 0 && `${links.employees} employee${links.employees !== 1 ? "s" : ""}`,
+        links.users > 0 && `${links.users} team member${links.users !== 1 ? "s" : ""}`,
+        links.assets > 0 && `${links.assets} IT asset${links.assets !== 1 ? "s" : ""}`,
+        links.tickets > 0 && `${links.tickets} support ticket${links.tickets !== 1 ? "s" : ""}`,
+        links.incidents > 0 && `${links.incidents} incident${links.incidents !== 1 ? "s" : ""}`,
+        links.playbooks > 0 && `${links.playbooks} playbook${links.playbooks !== 1 ? "s" : ""}`,
+      ].filter(Boolean)
+    : [];
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" aria-label="Delete company"><Trash2 className="h-4 w-4" /></Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-md">
+        {!hasLinks ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Delete &ldquo;{company.name}&rdquo;?</DialogTitle>
+              <DialogDescription>This will permanently delete the company. This cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>Cancel</Button>
+              <Button variant="destructive" onClick={tryDelete} disabled={pending}>
+                {pending ? "Checking…" : "Delete"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                &ldquo;{company.name}&rdquo; has linked data
+              </DialogTitle>
+              <DialogDescription asChild>
+                <div className="space-y-3 pt-1">
+                  <p>This company is linked to:</p>
+                  <ul className="ml-4 list-disc space-y-0.5 text-sm">
+                    {linkSummary.map((item) => <li key={String(item)}>{item}</li>)}
+                  </ul>
+                  <p className="text-sm">Choose how to proceed:</p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-3">
+              <div className="rounded-md border p-3 space-y-1">
+                <p className="text-sm font-medium flex items-center gap-2"><PowerOff className="h-4 w-4 text-muted-foreground" />Deactivate (recommended)</p>
+                <p className="text-xs text-muted-foreground">Hides the company from selection in new projects and forms. All linked data stays intact.</p>
+                <Button size="sm" variant="outline" className="mt-2" onClick={deactivate} disabled={pending || !company.active}>
+                  {pending ? "Deactivating…" : company.active ? "Deactivate company" : "Already inactive"}
+                </Button>
+              </div>
+
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-1">
+                <p className="text-sm font-medium flex items-center gap-2 text-destructive"><Trash2 className="h-4 w-4" />Force Delete</p>
+                <p className="text-xs text-muted-foreground">
+                  Permanently deletes the company and removes all linked records.
+                  {links.tickets > 0 && <span className="font-semibold text-destructive"> Support tickets will be permanently deleted.</span>}
+                  {" "}Projects, employees, assets and team members will be unlinked from this company.
+                </p>
+                <Button size="sm" variant="destructive" className="mt-2" onClick={forceDelete} disabled={pending}>
+                  {pending ? "Deleting…" : "Force delete everything"}
+                </Button>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setOpen(false)} disabled={pending}>Cancel</Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -97,6 +241,7 @@ function CompanyEditDialog({ company }: { company: CompanyRow }) {
         return;
       }
 
+      toast.success("Company updated");
       setOpen(false);
       router.refresh();
     });
