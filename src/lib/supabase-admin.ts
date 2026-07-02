@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export const STORAGE_BUCKET = "projectflow-attachments";
-export const LOGOS_BUCKET = "projectflow-logos";
+export const LOGOS_BUCKET = "logo";
 
 let _client: ReturnType<typeof createClient> | null = null;
 

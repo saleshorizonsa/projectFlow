@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { ensureLogosBucket, getPublicLogoUrl, getSupabaseAdmin, LOGOS_BUCKET } from "@/lib/supabase-admin";
+import { getPublicLogoUrl, getSupabaseAdmin, LOGOS_BUCKET } from "@/lib/supabase-admin";
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
@@ -44,13 +44,6 @@ export async function POST(request: Request, { params }: RouteContext) {
   const mimeType = resolveMime(file);
   if (!mimeType) {
     return NextResponse.json({ error: "Only PNG, JPEG, WebP, SVG, or GIF allowed" }, { status: 415 });
-  }
-
-  // Ensure bucket exists (public so logos render without signed URLs)
-  const bucketResult = await ensureLogosBucket();
-  if (bucketResult?.error) {
-    console.error("[logo] bucket error:", bucketResult.error);
-    return NextResponse.json({ error: "Storage bucket unavailable", detail: bucketResult.error }, { status: 500 });
   }
 
   // Delete existing logo file from storage if present
