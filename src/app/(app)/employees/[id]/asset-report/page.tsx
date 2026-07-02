@@ -4,6 +4,7 @@ import { ArrowLeft, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PrintButton } from "@/components/ui/print-button";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
         <Button asChild variant="ghost" size="sm"><Link href="/employees"><ArrowLeft className="h-4 w-4" /> Employees</Link></Button>
         <div className="flex gap-2">
           <Button asChild variant="outline"><a href={`/api/employees/${employee.id}/asset-report.pdf`}><Download className="h-4 w-4" /> PDF</a></Button>
+          <PrintButton />
         </div>
       </div>
 

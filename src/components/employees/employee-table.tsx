@@ -138,6 +138,13 @@ export function EmployeeTable({
                           <FileText className="h-4 w-4" /> Report
                         </Link>
                       </Button>
+                      {employee.status === "ON_LEAVE" && (
+                        <Button asChild size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400">
+                          <Link href={`/employees/${employee.id}/leave-form`}>
+                            <Palmtree className="h-4 w-4" /> Leave Form
+                          </Link>
+                        </Button>
+                      )}
                       {canManage && employee.status === "ACTIVE" && (
                         <EmployeeAssignDialog employee={employee} />
                       )}
@@ -211,6 +218,13 @@ export function EmployeeTable({
                     <FileText className="h-4 w-4" /> Report
                   </Link>
                 </Button>
+                {employee.status === "ON_LEAVE" && (
+                  <Button asChild size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400">
+                    <Link href={`/employees/${employee.id}/leave-form`}>
+                      <Palmtree className="h-4 w-4" /> Leave Form
+                    </Link>
+                  </Button>
+                )}
                 {canManage && employee.status === "ACTIVE" && <EmployeeAssignDialog employee={employee} />}
                 {canManage && employee.status === "ACTIVE" && <EmployeeSetOnLeaveDialog employee={employee} />}
                 {canManage && employee.status === "ON_LEAVE" && <MarkReturnedButton employee={employee} />}
