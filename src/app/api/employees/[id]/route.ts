@@ -46,7 +46,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         ...(location !== undefined ? { location: nullIfEmpty(location) } : {}),
         ...(ipAddress !== undefined ? { ipAddress: nullIfEmpty(ipAddress) } : {}),
         ...(vpnUserId !== undefined ? { vpnUserId: nullIfEmpty(vpnUserId) } : {}),
-        ...(vpnPassword !== undefined ? { vpnPassword: vpnPassword === "" ? null : encryptField(vpnPassword) } : {}),
+        ...(vpnPassword !== undefined && process.env.ENCRYPTION_KEY ? { vpnPassword: vpnPassword === "" ? null : encryptField(vpnPassword) } : {}),
         updatedBy: session.user.id,
         ...(companyIds ? {
           companies: {

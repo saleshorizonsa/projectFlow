@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, Eye, EyeOff, FileText, Link2, Pencil, Trash2, UserX, X } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -875,6 +875,7 @@ function EmployeeEditDialog({
   const [showVpnPassword, setShowVpnPassword] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const vpnPasswordRef = useRef<HTMLInputElement>(null);
 
   function handleOpenChange(next: boolean) {
     if (!next && isDirty) {
@@ -884,6 +885,12 @@ function EmployeeEditDialog({
       setOpen(next);
     }
   }
+
+  useEffect(() => {
+    if (open && vpnPasswordRef.current) {
+      vpnPasswordRef.current.value = "";
+    }
+  }, [open]);
 
   function toggleCompany(companyId: string, checked: boolean) {
     setIsDirty(true);
@@ -1001,6 +1008,7 @@ function EmployeeEditDialog({
               <Input
                 id="vpnPassword"
                 name="vpnPassword"
+                ref={vpnPasswordRef}
                 type={showVpnPassword ? "text" : "password"}
                 placeholder={employee.vpnPassword ? "Leave blank to keep current" : "Set VPN password"}
                 className="pr-10"
