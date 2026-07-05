@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, EyeOff, FileText, Link2, Palmtree, Pencil, RotateCcw, Search, Trash2, UserX, X } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { CheckCircle2, ChevronDown, Eye, EyeOff, FileText, Filter, Link2, Palmtree, Pencil, RotateCcw, Search, Trash2, UserX, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -57,17 +57,31 @@ export function EmployeeTable({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
+  const [activeDepts, setActiveDepts] = useState<Set<string>>(new Set());
+  const [activeCompanies, setActiveCompanies] = useState<Set<string>>(new Set());
+  const [activeLocations, setActiveLocations] = useState<Set<string>>(new Set());
+  const [panelOpen, setPanelOpen] = useState(false);
 
-  function toggleStatus(s: string) {
-    setActiveStatuses(prev => {
-      const next = new Set(prev);
-      next.has(s) ? next.delete(s) : next.add(s);
-      return next;
-    });
+  const allDepts = useMemo(() =>
+    [...new Set(employees.map(e => e.department))].sort(), [employees]);
+  const allLocations = useMemo(() =>
+    [...new Set(employees.map(e => e.location).filter(Boolean) as string[])].sort(), [employees]);
+  const allCompanyCodes = useMemo(() =>
+    [...new Set(employees.flatMap(e => e.companies.map(c => c.code)))].sort(), [employees]);
+
+  function toggle(set: Set<string>, setFn: (s: Set<string>) => void, value: string) {
+    const next = new Set(set);
+    next.has(value) ? next.delete(value) : next.add(value);
+    setFn(next);
   }
 
-  const filtered = employees.filter((e) => {
+  const drillCount = activeDepts.size + activeCompanies.size + activeLocations.size;
+
+  const filtered = useMemo(() => employees.filter((e) => {
     if (activeStatuses.size > 0 && !activeStatuses.has(e.status)) return false;
+    if (activeDepts.size > 0 && !activeDepts.has(e.department)) return false;
+    if (activeLocations.size > 0 && !activeLocations.has(e.location ?? "")) return false;
+    if (activeCompanies.size > 0 && !e.companies.some(c => activeCompanies.has(c.code))) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -78,7 +92,7 @@ export function EmployeeTable({
       (e.email ?? "").toLowerCase().includes(q) ||
       e.companies.some(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
     );
-  });
+  }), [employees, search, activeStatuses, activeDepts, activeLocations, activeCompanies]);
 
   async function deleteEmployee(employee: EmployeeRow) {
     if (
@@ -128,7 +142,7 @@ export function EmployeeTable({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => toggleStatus(value)}
+                  onClick={() => toggle(activeStatuses, setActiveStatuses, value)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                     checked
@@ -150,12 +164,109 @@ export function EmployeeTable({
                 </button>
               );
             })}
-            {(search || activeStatuses.size > 0) && (
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setSearch(""); setActiveStatuses(new Set()); }}>
+            {(search || activeStatuses.size > 0 || drillCount > 0) && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setSearch(""); setActiveStatuses(new Set()); setActiveDepts(new Set()); setActiveCompanies(new Set()); setActiveLocations(new Set()); }}>
                 <X className="h-3 w-3" /> Clear all
               </Button>
             )}
             <span className="ml-auto text-xs text-muted-foreground">{filtered.length} of {employees.length} employees</span>
+          </div>
+
+          {/* Drill-down filter panel toggle */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setPanelOpen(v => !v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                drillCount > 0
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Drill-down Filters
+              {drillCount > 0 && (
+                <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 py-0.5 text-[10px] leading-none">{drillCount}</span>
+              )}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", panelOpen && "rotate-180")} />
+            </button>
+
+            {panelOpen && (
+              <div className="mt-2 grid gap-4 rounded-md border bg-muted/20 p-3 sm:grid-cols-3">
+                {/* Department */}
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Department</p>
+                  <div className="flex flex-col gap-1">
+                    {allDepts.map(dept => {
+                      const checked = activeDepts.has(dept);
+                      const count = employees.filter(e => e.department === dept).length;
+                      return (
+                        <label key={dept} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted text-sm">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggle(activeDepts, setActiveDepts, dept)}
+                            className="h-3.5 w-3.5 rounded accent-primary"
+                          />
+                          <span className="flex-1 truncate">{dept}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                        </label>
+                      );
+                    })}
+                    {allDepts.length === 0 && <p className="text-xs text-muted-foreground">No departments</p>}
+                  </div>
+                </div>
+
+                {/* Company */}
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Company</p>
+                  <div className="flex flex-col gap-1">
+                    {allCompanyCodes.map(code => {
+                      const checked = activeCompanies.has(code);
+                      const count = employees.filter(e => e.companies.some(c => c.code === code)).length;
+                      return (
+                        <label key={code} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted text-sm">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggle(activeCompanies, setActiveCompanies, code)}
+                            className="h-3.5 w-3.5 rounded accent-primary"
+                          />
+                          <span className="flex-1 truncate">{code}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                        </label>
+                      );
+                    })}
+                    {allCompanyCodes.length === 0 && <p className="text-xs text-muted-foreground">No companies</p>}
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Location</p>
+                  <div className="flex flex-col gap-1">
+                    {allLocations.map(loc => {
+                      const checked = activeLocations.has(loc);
+                      const count = employees.filter(e => e.location === loc).length;
+                      return (
+                        <label key={loc} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted text-sm">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggle(activeLocations, setActiveLocations, loc)}
+                            className="h-3.5 w-3.5 rounded accent-primary"
+                          />
+                          <span className="flex-1 truncate">{loc}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                        </label>
+                      );
+                    })}
+                    {allLocations.length === 0 && <p className="text-xs text-muted-foreground">No locations on record</p>}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
