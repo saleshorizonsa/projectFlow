@@ -20,7 +20,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
-    const url = `${window.location.origin}/api/it-assets/${id}/pdf`;
+    const url = `${window.location.origin}/api/public/asset-pdf/${id}`;
     QRCode.toDataURL(url, { width: 220, margin: 1, errorCorrectionLevel: "M" })
       .then(setQrDataUrl)
       .catch(console.error);

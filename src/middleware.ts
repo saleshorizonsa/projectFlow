@@ -10,6 +10,7 @@ const PUBLIC_PREFIXES = [
   "/api/whatsapp",
   "/api/automation",
   "/api/vulnerabilities/webhook",
+  "/api/public",
 ];
 
 export default auth((req) => {
