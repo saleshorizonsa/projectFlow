@@ -1,9 +1,9 @@
 import { LoginForm } from "@/components/auth/login-form";
 import {
-  Shield,
   Users,
   Monitor,
   FolderKanban,
+  Shield,
   Headphones,
   Lock,
   BarChart3,
@@ -18,40 +18,49 @@ const features = [
   { icon: BarChart3,     label: "Analytics & Reporting",     desc: "Live dashboards, audit logs, and compliance reports" },
 ];
 
+// Brand palette
+const NAVY   = "#2e5090";
+const AMBER  = "#c87a1c";
+const DARK   = "#0d1a2e";
+const DARKER = "#091221";
+
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen">
 
       {/* ── LEFT PANEL ─────────────────────────────────────────────────── */}
       <div className="relative hidden flex-col justify-between overflow-hidden lg:flex lg:w-[58%]"
-           style={{ background: "linear-gradient(135deg, #050d1a 0%, #0a1628 50%, #0d1f3c 100%)" }}>
+           style={{ background: `linear-gradient(135deg, ${DARKER} 0%, ${DARK} 50%, #112240 100%)` }}>
 
         {/* Grid pattern */}
         <div className="pointer-events-none absolute inset-0"
              style={{
-               backgroundImage: `linear-gradient(rgba(59,130,246,0.07) 1px, transparent 1px),
-                                  linear-gradient(90deg, rgba(59,130,246,0.07) 1px, transparent 1px)`,
+               backgroundImage: `linear-gradient(rgba(46,80,144,0.09) 1px, transparent 1px),
+                                  linear-gradient(90deg, rgba(46,80,144,0.09) 1px, transparent 1px)`,
                backgroundSize: "48px 48px",
              }} />
 
-        {/* Radial glow — top left */}
+        {/* Radial glow — top left (navy) */}
         <div className="pointer-events-none absolute -left-32 -top-32 h-[500px] w-[500px] rounded-full"
-             style={{ background: "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)" }} />
+             style={{ background: `radial-gradient(circle, rgba(46,80,144,0.18) 0%, transparent 70%)` }} />
 
-        {/* Radial glow — bottom right */}
+        {/* Radial glow — bottom right (amber) */}
         <div className="pointer-events-none absolute -bottom-32 -right-16 h-[400px] w-[400px] rounded-full"
-             style={{ background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)" }} />
+             style={{ background: `radial-gradient(circle, rgba(200,122,28,0.12) 0%, transparent 70%)` }} />
 
         {/* ── Top: logo ── */}
         <div className="relative z-10 p-10">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl"
-                 style={{ background: "rgba(59,130,246,0.15)", boxShadow: "0 0 0 1px rgba(59,130,246,0.3), 0 0 20px rgba(59,130,246,0.1)" }}>
-              <Shield className="h-5 w-5" style={{ color: "#60a5fa" }} />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Logo with Tagline.jpg"
+              alt="Horizon Business Solutions"
+              className="h-12 w-auto object-contain"
+              style={{ filter: "brightness(1.1) drop-shadow(0 0 8px rgba(200,122,28,0.3))" }}
+            />
             <div>
               <div className="text-lg font-bold tracking-tight text-white">HorizonMiyaar</div>
-              <div className="text-xs" style={{ color: "rgba(147,197,253,0.55)" }}>By Horizon Business Solutions Est.</div>
+              <div className="text-xs" style={{ color: `rgba(200,160,80,0.65)` }}>By Horizon Business Solutions Est.</div>
             </div>
           </div>
         </div>
@@ -60,13 +69,13 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-10 px-10">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
-                 style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.25)", color: "#93c5fd" }}>
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                 style={{ background: `rgba(200,122,28,0.12)`, border: `1px solid rgba(200,122,28,0.30)`, color: `#f0a845` }}>
+              <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: AMBER }} />
               Secure Enterprise Platform
             </div>
             <h1 className="text-4xl font-bold leading-tight text-white xl:text-[42px]">
               Empowering Secure<br />
-              <span style={{ background: "linear-gradient(90deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <span style={{ background: `linear-gradient(90deg, ${AMBER}, #f0c060)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Digital Governance.
               </span>
             </h1>
@@ -79,10 +88,10 @@ export default function LoginPage() {
           <div className="grid gap-3">
             {features.map(({ icon: Icon, label, desc }) => (
               <div key={label} className="flex items-center gap-3 rounded-xl p-3 transition-colors"
-                   style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                   style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                     style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}>
-                  <Icon className="h-4 w-4" style={{ color: "#60a5fa" }} />
+                     style={{ background: `rgba(46,80,144,0.18)`, border: `1px solid rgba(46,80,144,0.30)` }}>
+                  <Icon className="h-4 w-4" style={{ color: `#7ba3e0` }} />
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-white">{label}</div>
@@ -109,9 +118,8 @@ export default function LoginPage() {
 
         {/* Mobile logo (hidden on desktop) */}
         <div className="mb-8 flex flex-col items-center gap-2 lg:hidden">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/30">
-            <Shield className="h-6 w-6 text-primary" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/Logo with Tagline.jpg" alt="Horizon Business Solutions" className="h-10 w-auto object-contain" />
           <div className="text-center">
             <div className="text-lg font-bold">HorizonMiyaar</div>
             <div className="text-xs text-muted-foreground">By Horizon Business Solutions Est.</div>
