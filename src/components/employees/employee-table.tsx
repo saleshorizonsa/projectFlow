@@ -56,10 +56,18 @@ export function EmployeeTable({
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
+
+  function toggleStatus(s: string) {
+    setActiveStatuses(prev => {
+      const next = new Set(prev);
+      next.has(s) ? next.delete(s) : next.add(s);
+      return next;
+    });
+  }
 
   const filtered = employees.filter((e) => {
-    if (statusFilter !== "ALL" && e.status !== statusFilter) return false;
+    if (activeStatuses.size > 0 && !activeStatuses.has(e.status)) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -95,9 +103,9 @@ export function EmployeeTable({
   return (
     <Card>
       <CardContent className="pt-5">
-        {/* Search + filter bar */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          <div className="relative flex-1 min-w-[200px]">
+        {/* Search + checkbox status filters */}
+        <div className="mb-4 space-y-2">
+          <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by name, ID, department, email…"
@@ -106,19 +114,49 @@ export function EmployeeTable({
               className="pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {statuses.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {(search || statusFilter !== "ALL") && (
-            <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("ALL"); }}>
-              <X className="h-4 w-4" /> Clear
-            </Button>
-          )}
-          <p className="self-center text-xs text-muted-foreground">{filtered.length} of {employees.length}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Filter:</span>
+            {[
+              { value: "ACTIVE",   label: "Active",    variant: "success"     },
+              { value: "ON_LEAVE", label: "On Leave",  variant: "warning"     },
+              { value: "INACTIVE", label: "Inactive",  variant: "secondary"   },
+              { value: "EXITED",   label: "Exited",    variant: "destructive" },
+            ].map(({ value, label, variant }) => {
+              const count = employees.filter(e => e.status === value).length;
+              const checked = activeStatuses.has(value);
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleStatus(value)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    checked
+                      ? variant === "success"     ? "border-green-500 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                      : variant === "warning"     ? "border-amber-500 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      : variant === "destructive" ? "border-red-500 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                      :                            "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <span className={cn(
+                    "h-3.5 w-3.5 rounded-sm border flex items-center justify-center shrink-0",
+                    checked ? "border-current bg-current" : "border-current/40"
+                  )}>
+                    {checked && <X className="h-2.5 w-2.5 text-white dark:text-black" />}
+                  </span>
+                  {label}
+                  <span className="ml-0.5 rounded-full bg-background/60 px-1 tabular-nums">{count}</span>
+                </button>
+              );
+            })}
+            {(search || activeStatuses.size > 0) && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setSearch(""); setActiveStatuses(new Set()); }}>
+                <X className="h-3 w-3" /> Clear all
+              </Button>
+            )}
+            <span className="ml-auto text-xs text-muted-foreground">{filtered.length} of {employees.length} employees</span>
+          </div>
         </div>
 
         <div className="hidden max-h-[560px] overflow-auto rounded-md border md:block">
