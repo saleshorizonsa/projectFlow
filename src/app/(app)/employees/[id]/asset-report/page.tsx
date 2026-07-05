@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrintButton } from "@/components/ui/print-button";
 import { getPrisma } from "@/lib/prisma";
+import { generateQrDataUrl } from "@/lib/qrcode";
 import { formatEnum } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EmployeeAssetReportPage({ params }: PageProps) {
   const { id } = await params;
+
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  const pageUrl = `${proto}://${host}/employees/${id}/asset-report`;
+  const qrDataUrl = await generateQrDataUrl(pageUrl);
+
   const employee = await getPrisma().employee.findUnique({
     where: { id },
     include: {
@@ -35,6 +44,7 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
       <Card>
         <CardHeader className="border-b pb-4">
           <div className="flex items-center justify-between gap-4">
+            {/* Company logos + names */}
             <div className="flex flex-wrap items-center gap-4">
               {employee.companies.map((link) => (
                 <div key={link.id} className="flex items-center gap-2">
@@ -49,7 +59,16 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
                 </div>
               ))}
             </div>
-            <CardTitle className="text-right text-base">Employee Asset &amp; License Handover Record</CardTitle>
+
+            {/* Title + QR code */}
+            <div className="flex items-center gap-4">
+              <CardTitle className="text-right text-base">Employee Asset &amp; License Handover Record</CardTitle>
+              <div className="flex shrink-0 flex-col items-center gap-0.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} alt="QR Code" className="h-[72px] w-[72px] rounded border" />
+                <span className="text-[9px] text-muted-foreground">Scan for digital copy</span>
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

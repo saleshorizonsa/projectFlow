@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrintButton } from "@/components/ui/print-button";
 import { getPrisma } from "@/lib/prisma";
+import { generateQrDataUrl } from "@/lib/qrcode";
 import { formatEnum } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EmployeeLeaveFormPage({ params }: PageProps) {
   const { id } = await params;
+
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  const pageUrl = `${proto}://${host}/employees/${id}/leave-form`;
+  const qrDataUrl = await generateQrDataUrl(pageUrl);
+
   const employee = await getPrisma().employee.findUnique({
     where: { id },
     include: {
@@ -61,12 +70,19 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
               <CardTitle className="text-xl">Employee Leave Authorization Form</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">Ref: {employee.employeeId} — Printed: {today}</p>
             </div>
-            <Badge
-              variant={employee.status === "ON_LEAVE" ? "warning" : employee.status === "ACTIVE" ? "success" : "secondary"}
-              className="shrink-0 text-sm"
-            >
-              {formatEnum(employee.status)}
-            </Badge>
+            <div className="flex shrink-0 items-center gap-3">
+              <Badge
+                variant={employee.status === "ON_LEAVE" ? "warning" : employee.status === "ACTIVE" ? "success" : "secondary"}
+                className="text-sm"
+              >
+                {formatEnum(employee.status)}
+              </Badge>
+              <div className="flex flex-col items-center gap-0.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} alt="QR Code" className="h-[72px] w-[72px] rounded border" />
+                <span className="text-[9px] text-muted-foreground">Scan for digital copy</span>
+              </div>
+            </div>
           </div>
         </CardHeader>
 
