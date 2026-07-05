@@ -11,6 +11,7 @@ const PUBLIC_PREFIXES = [
   "/api/automation",
   "/api/vulnerabilities/webhook",
   "/api/public",
+  "/public",   // no-auth landing pages (asset, employee) reachable via QR scan
 ];
 
 export default auth((req) => {

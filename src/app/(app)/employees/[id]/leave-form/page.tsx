@@ -18,7 +18,7 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
   const headersList = await headers();
   const host = headersList.get("host") ?? "localhost:3000";
   const proto = host.startsWith("localhost") ? "http" : "https";
-  const pageUrl = `${proto}://${host}/employees/${id}/leave-form`;
+  const pageUrl = `${proto}://${host}/public/employee/${id}`;
   const qrDataUrl = await generateQrDataUrl(pageUrl);
 
   const employee = await getPrisma().employee.findUnique({

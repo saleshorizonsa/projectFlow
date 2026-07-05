@@ -20,7 +20,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
-    const url = `${window.location.origin}/api/public/asset-pdf/${id}`;
+    const url = `${window.location.origin}/public/asset/${id}`;
     QRCode.toDataURL(url, { width: 220, margin: 1, errorCorrectionLevel: "M" })
       .then(setQrDataUrl)
       .catch(console.error);
@@ -63,7 +63,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
             ? <img src={qrDataUrl} alt={`QR for ${assetTag}`} width={200} height={200} className="rounded-md border" />
             : <div className="h-[200px] w-[200px] animate-pulse rounded-md bg-muted" />}
           <p className="text-center text-xs text-muted-foreground">
-            Scan to open PDF with full asset &amp; employee details
+            Scan to open asset record &amp; download PDF (no login required)
           </p>
           <div className="w-full space-y-2">
             <Button asChild variant="outline" className="w-full" size="sm">
