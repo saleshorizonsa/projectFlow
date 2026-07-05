@@ -20,7 +20,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
-    const url = `${window.location.origin}/it-maintenance/assets/${id}`;
+    const url = `${window.location.origin}/api/it-assets/${id}/pdf`;
     QRCode.toDataURL(url, { width: 220, margin: 1, errorCorrectionLevel: "M" })
       .then(setQrDataUrl)
       .catch(console.error);
@@ -44,7 +44,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
   <div class="row">${name}</div>
   <div class="row">${type.replace(/_/g, " ")} · ${vendor}</div>
   <div class="row">${location}</div>
-  <div class="note">Scan for full asset record & employee details</div>
+  <div class="note">Scan to open PDF record with employee details</div>
 </div>
 <script>window.onload=()=>{window.print();window.close()}</script>
 </body></html>`);
@@ -63,7 +63,7 @@ export function AssetQrButton({ id, assetTag, name, type, vendor, location }: Pr
             ? <img src={qrDataUrl} alt={`QR for ${assetTag}`} width={200} height={200} className="rounded-md border" />
             : <div className="h-[200px] w-[200px] animate-pulse rounded-md bg-muted" />}
           <p className="text-center text-xs text-muted-foreground">
-            Scan to view full asset record including employee details
+            Scan to open PDF with full asset &amp; employee details
           </p>
           <div className="w-full space-y-2">
             <Button asChild variant="outline" className="w-full" size="sm">
