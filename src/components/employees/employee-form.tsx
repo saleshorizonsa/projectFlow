@@ -74,7 +74,17 @@ export function EmployeeForm({ companies }: { companies: CompanyOption[] }) {
           <Field label="Phone" id="phone"><Input id="phone" {...form.register("phone")} /></Field>
           <Field label="Department" id="department"><Input id="department" placeholder="IT / Finance / Operations" {...form.register("department")} /></Field>
           <Field label="Job Title" id="jobTitle"><Input id="jobTitle" {...form.register("jobTitle")} /></Field>
-          <Field label="Location" id="location"><Input id="location" placeholder="Head Office / Plant / Branch" {...form.register("location")} /></Field>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Select value={form.watch("location") ?? ""} onValueChange={(v) => form.setValue("location", v, { shouldDirty: true })}>
+              <SelectTrigger id="location"><SelectValue placeholder="Select location" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Jeddah">Jeddah</SelectItem>
+                <SelectItem value="Riyadh">Riyadh</SelectItem>
+                <SelectItem value="Dammam">Dammam</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Status</Label>
             <Select value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as EmployeeValues["status"])}>

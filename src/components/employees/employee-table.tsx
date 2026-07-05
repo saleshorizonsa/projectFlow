@@ -1418,6 +1418,7 @@ function EmployeeEditDialog({
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState(employee.status);
+  const [location, setLocation] = useState(employee.location ?? "");
   const [selectedCompanyIds, setSelectedCompanyIds] = useState(
     employee.companies.map((company) => company.id),
   );
@@ -1463,7 +1464,7 @@ function EmployeeEditDialog({
         phone: formData.get("phone"),
         department: formData.get("department"),
         jobTitle: formData.get("jobTitle"),
-        location: formData.get("location"),
+        location,
         ipAddress: formData.get("ipAddress"),
         vpnUserId: formData.get("vpnUserId"),
         status,
@@ -1518,9 +1519,19 @@ function EmployeeEditDialog({
           <Field label="Job Title" id="jobTitle">
             <Input id="jobTitle" name="jobTitle" defaultValue={employee.jobTitle} />
           </Field>
-          <Field label="Location" id="location">
-            <Input id="location" name="location" defaultValue={employee.location ?? ""} />
-          </Field>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Select value={location} onValueChange={(v) => { setLocation(v); setIsDirty(true); }}>
+              <SelectTrigger id="location">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Jeddah">Jeddah</SelectItem>
+                <SelectItem value="Riyadh">Riyadh</SelectItem>
+                <SelectItem value="Dammam">Dammam</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Status</Label>
             <Select value={status} onValueChange={(v) => { setStatus(v); setIsDirty(true); }}>
