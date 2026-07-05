@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Eye, EyeOff, FileText, Link2, Palmtree, Pencil, RotateCcw, Trash2, UserX, X } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, FileText, Link2, Palmtree, Pencil, RotateCcw, Search, Trash2, UserX, X } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -55,6 +55,22 @@ export function EmployeeTable({
   canManage: boolean;
 }) {
   const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const filtered = employees.filter((e) => {
+    if (statusFilter !== "ALL" && e.status !== statusFilter) return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      e.name.toLowerCase().includes(q) ||
+      e.employeeId.toLowerCase().includes(q) ||
+      e.department.toLowerCase().includes(q) ||
+      e.jobTitle.toLowerCase().includes(q) ||
+      (e.email ?? "").toLowerCase().includes(q) ||
+      e.companies.some(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
+    );
+  });
 
   async function deleteEmployee(employee: EmployeeRow) {
     if (
@@ -79,6 +95,32 @@ export function EmployeeTable({
   return (
     <Card>
       <CardContent className="pt-5">
+        {/* Search + filter bar */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, ID, department, email…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All statuses</SelectItem>
+              {statuses.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(search || statusFilter !== "ALL") && (
+            <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("ALL"); }}>
+              <X className="h-4 w-4" /> Clear
+            </Button>
+          )}
+          <p className="self-center text-xs text-muted-foreground">{filtered.length} of {employees.length}</p>
+        </div>
+
         <div className="hidden max-h-[560px] overflow-auto rounded-md border md:block">
           <Table>
             <TableHeader>
@@ -93,12 +135,12 @@ export function EmployeeTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
+              {filtered.map((employee) => (
                 <TableRow key={employee.id}>
                   <TableCell>
-                    <div className="font-medium">
+                    <Link href={`/employees/${employee.id}`} className="font-medium hover:underline">
                       {employee.employeeId} / {employee.name}
-                    </div>
+                    </Link>
                     <div className="text-xs text-muted-foreground">
                       {employee.email ?? "No email"} / {employee.phone ?? "No phone"}
                     </div>
@@ -178,13 +220,13 @@ export function EmployeeTable({
 
         {/* Mobile cards */}
         <div className="grid max-h-[620px] gap-3 overflow-auto pr-1 md:hidden">
-          {employees.map((employee) => (
+          {filtered.map((employee) => (
             <div key={employee.id} className="rounded-md border p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate font-medium">
+                  <Link href={`/employees/${employee.id}`} className="truncate font-medium hover:underline block">
                     {employee.employeeId} / {employee.name}
-                  </div>
+                  </Link>
                   <div className="truncate text-xs text-muted-foreground">
                     {employee.jobTitle} / {employee.department}
                   </div>
