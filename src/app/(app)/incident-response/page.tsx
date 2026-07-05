@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, Columns2, GripVertical, LayoutList, Plus, RefreshCw, Send, Shield } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, Clock, Columns2, GripVertical, LayoutList, Plus, RefreshCw, Search, Send, Shield } from "lucide-react";
 import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type Incident = {
@@ -558,6 +558,7 @@ export default function IncidentResponsePage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [filter, setFilter] = useState({ status: "", severity: "", type: "" });
   const [view, setView] = useState<"list" | "kanban">("list");
+  const [search, setSearch] = useState("");
 
   function load() {
     const p = new URLSearchParams();
@@ -579,12 +580,20 @@ export default function IncidentResponsePage() {
 
   // In kanban mode, severity/type filters are applied client-side so all status
   // columns remain visible while still respecting the active filters.
-  const displayedIncidents = view === "kanban"
-    ? incidents.filter(i =>
-        (!filter.severity || i.severity === filter.severity) &&
-        (!filter.type || i.type === filter.type)
-      )
-    : incidents;
+  const displayedIncidents = useMemo(() => {
+    const q = search.toLowerCase();
+    const base = view === "kanban"
+      ? incidents.filter(i =>
+          (!filter.severity || i.severity === filter.severity) &&
+          (!filter.type || i.type === filter.type)
+        )
+      : incidents;
+    if (!q) return base;
+    return base.filter(i =>
+      i.incidentId.toLowerCase().includes(q) ||
+      i.title.toLowerCase().includes(q)
+    );
+  }, [incidents, filter.severity, filter.type, view, search]);
 
   return (
     <div className="space-y-5">
@@ -625,6 +634,15 @@ export default function IncidentResponsePage() {
 
       {/* Filters + view toggle */}
       <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search incident ID or title…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8 w-60"
+          />
+        </div>
         {/* Status filter — hidden in kanban mode */}
         {view === "list" && (
           <Select value={filter.status || "ALL"} onValueChange={v => setFilter(p => ({ ...p, status: v === "ALL" ? "" : v }))}>

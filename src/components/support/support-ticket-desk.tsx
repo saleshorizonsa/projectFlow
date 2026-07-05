@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageSquarePlus, Send, Trash2 } from "lucide-react";
+import { MessageSquarePlus, Search, Send, Trash2 } from "lucide-react";
 import { AttachmentSection } from "@/components/attachments/attachment-section";
 import { CommentSection } from "@/components/comments/comment-section";
 import { useRouter } from "next/navigation";
@@ -86,6 +86,7 @@ export function SupportTicketDesk({
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const defaultCompanyId = companies[0]?.id ?? "";
   const form = useForm<TicketValues>({
     resolver: zodResolver(supportTicketSchema),
@@ -109,6 +110,16 @@ export function SupportTicketDesk({
   const selectedCompanyId = form.watch("companyId") || defaultCompanyId;
   const filteredEmployees = useMemo(() => employees.filter((employee) => employee.companyIds.includes(selectedCompanyId)), [employees, selectedCompanyId]);
   const filteredAssets = useMemo(() => assets.filter((asset) => asset.companyIds.includes(selectedCompanyId)), [assets, selectedCompanyId]);
+  const filteredTickets = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return tickets;
+    return tickets.filter(t =>
+      t.ticketNo.toLowerCase().includes(q) ||
+      t.title.toLowerCase().includes(q) ||
+      (t.employeeName ?? "").toLowerCase().includes(q) ||
+      (t.requesterName ?? "").toLowerCase().includes(q)
+    );
+  }, [tickets, search]);
 
   async function onSubmit(values: TicketValues) {
     setMessage(null);
@@ -158,8 +169,17 @@ export function SupportTicketDesk({
       </Card>}
 
       {showTickets && <div className={showForm ? "space-y-3" : "space-y-3 xl:col-span-2"}>
-        {tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} users={users} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}
-        {tickets.length === 0 && (
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search ticket no, title, employee…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8 w-full"
+          />
+        </div>
+        {filteredTickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} users={users} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}
+        {filteredTickets.length === 0 && (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">No support tickets found for this company filter.</CardContent>
           </Card>

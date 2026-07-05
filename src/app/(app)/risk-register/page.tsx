@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type Risk = {
@@ -258,6 +258,7 @@ function AddRiskDialog({ onCreated }: { onCreated: () => void }) {
 export default function RiskRegisterPage() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [filter, setFilter] = useState({ status: "", category: "" });
+  const [search, setSearch] = useState("");
 
   function load() {
     const params = new URLSearchParams();
@@ -267,7 +268,13 @@ export default function RiskRegisterPage() {
 
   useEffect(() => { load(); }, [filter.status]);
 
-  const filtered = risks.filter(r => !filter.category || r.category === filter.category);
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return risks.filter(r =>
+      (!filter.category || r.category === filter.category) &&
+      (!q || r.riskId.toLowerCase().includes(q) || r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q))
+    );
+  }, [risks, filter.category, search]);
 
   const openRisks = risks.filter(r => r.status !== "CLOSED");
   const criticalCount = openRisks.filter(r => r.riskScore >= 15).length;
@@ -302,6 +309,15 @@ export default function RiskRegisterPage() {
 
         <TabsContent value="list" className="space-y-3">
           <div className="flex flex-wrap gap-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search risk ID, title, description…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 w-64"
+              />
+            </div>
             <Select value={filter.status || "ALL"} onValueChange={v => setFilter(p => ({ ...p, status: v === "ALL" ? "" : v }))}>
               <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
               <SelectContent>

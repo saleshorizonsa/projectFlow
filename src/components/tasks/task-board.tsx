@@ -1,11 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatEnum, trafficLight } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { TaskEditDialog, type EditableTask } from "@/components/tasks/task-edit-dialog";
 
@@ -29,6 +31,16 @@ const statuses = ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"
 
 export function TaskBoard({ tasks, currentUserId = "", currentUserRole = "VIEWER" }: { tasks: Task[]; currentUserId?: string; currentUserRole?: string }) {
   const router = useRouter();
+  const [search, setSearch] = useState("");
+  const filteredTasks = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return tasks;
+    return tasks.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      t.assignee.name.toLowerCase().includes(q)
+    );
+  }, [tasks, search]);
+
   async function deleteTask(task: Task) {
     if (!window.confirm(`Delete task "${task.title}"?`)) return;
     const response = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
@@ -38,6 +50,15 @@ export function TaskBoard({ tasks, currentUserId = "", currentUserRole = "VIEWER
 
   return (
     <Tabs defaultValue="kanban" className="space-y-4">
+      <div className="relative w-full max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search title or assignee…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
       <TabsList>
         <TabsTrigger value="kanban">Kanban</TabsTrigger>
         <TabsTrigger value="list">List</TabsTrigger>
@@ -50,7 +71,7 @@ export function TaskBoard({ tasks, currentUserId = "", currentUserRole = "VIEWER
             <Card key={status}>
               <CardHeader><CardTitle className="text-sm">{formatEnum(status)}</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                {tasks.filter((task) => task.status === status).map((task) => (
+                {filteredTasks.filter((task) => task.status === status).map((task) => (
                   <div key={task.id} className="rounded-md border bg-background p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 truncate text-sm font-medium">{task.title}</div>
@@ -77,13 +98,13 @@ export function TaskBoard({ tasks, currentUserId = "", currentUserRole = "VIEWER
         </div>
       </TabsContent>
       <TabsContent value="list">
-        <Card><CardContent className="space-y-3 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
+        <Card><CardContent className="space-y-3 pt-5">{filteredTasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
       <TabsContent value="calendar">
-        <Card><CardContent className="grid gap-3 pt-5 md:grid-cols-2 xl:grid-cols-3">{tasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
+        <Card><CardContent className="grid gap-3 pt-5 md:grid-cols-2 xl:grid-cols-3">{filteredTasks.map((task) => <TaskLine key={task.id} task={task} onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
       <TabsContent value="gantt">
-        <Card><CardContent className="space-y-4 pt-5">{tasks.map((task) => <TaskLine key={task.id} task={task} gantt onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
+        <Card><CardContent className="space-y-4 pt-5">{filteredTasks.map((task) => <TaskLine key={task.id} task={task} gantt onDelete={deleteTask} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}</CardContent></Card>
       </TabsContent>
     </Tabs>
   );
