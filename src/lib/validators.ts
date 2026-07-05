@@ -71,10 +71,12 @@ const taskBaseSchema = z.object({
   subLayerId: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
   assigneeId: z.string().min(1),
+  startDate: z.coerce.date().optional().nullable(),
   dueDate: z.coerce.date(),
   estimatedHours: z.coerce.number().positive(),
   actualHours: z.coerce.number().nonnegative().default(0),
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"]),
+  parentTaskId: z.string().optional().nullable(),
 });
 
 export const taskSchema = taskBaseSchema.superRefine((value, context) => {

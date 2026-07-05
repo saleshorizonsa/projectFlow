@@ -130,6 +130,10 @@ export function TaskForm({ projects, users }: { projects: ProjectOption[]; users
           <Picker label="Priority" value={form.watch("priority")} onValueChange={(value) => form.setValue("priority", value as TaskFormValues["priority"])} items={["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((value) => ({ value, label: value }))} />
           <Picker label="Status" value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as TaskFormValues["status"])} items={["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"].map((value) => ({ value, label: value.replaceAll("_", " ") }))} />
           <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date <span className="text-xs text-muted-foreground">(optional)</span></Label>
+            <Input id="startDate" type="date" {...form.register("startDate")} />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="dueDate">Due Date</Label>
             <Input id="dueDate" type="date" {...form.register("dueDate")} />
           </div>

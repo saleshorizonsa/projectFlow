@@ -10,28 +10,42 @@ import { getPrisma } from "@/lib/prisma";
 export default async function TasksPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const session = await auth();
   const companyId = await selectedCompanyId(searchParams);
-  const tasks = await getPrisma().task.findMany({
-    where: companyId
-      ? { OR: [relatedProjectCompanyWhere(companyId), { taskType: "GENERAL", assignee: userCompanyWhere(companyId) }] }
-      : {},
-    include: { project: { include: { companies: { include: { company: true } } } }, assignee: true, layer: true, subLayer: true },
-    orderBy: { dueDate: "asc" },
-  });
+  const [tasks, users] = await Promise.all([
+    getPrisma().task.findMany({
+      where: companyId
+        ? { OR: [relatedProjectCompanyWhere(companyId), { taskType: "GENERAL", assignee: userCompanyWhere(companyId) }] }
+        : {},
+      include: {
+        project: { include: { companies: { include: { company: true } } } },
+        assignee: true,
+        layer: true,
+        subLayer: true,
+        _count: { select: { subtasks: true } },
+      },
+      orderBy: { dueDate: "asc" },
+    }),
+    getPrisma().user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
+
   const taskRows = tasks.map((task) => ({
     id: task.id,
     title: task.title,
     description: task.description,
     priority: task.priority,
     status: task.status,
+    startDate: task.startDate ? task.startDate.toISOString() : null,
     dueDate: task.dueDate.toISOString(),
     estimatedHours: Number(task.estimatedHours),
     actualHours: Number(task.actualHours),
     taskType: task.taskType,
+    assigneeId: task.assigneeId,
+    parentTaskId: task.parentTaskId ?? null,
+    subtaskCount: task._count.subtasks,
     project: task.project ? {
       name: task.project.name,
       companies: task.project.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
     } : null,
-    assignee: { name: task.assignee.name },
+    assignee: { id: task.assignee.id, name: task.assignee.name },
     layer: task.layer ? { name: task.layer.name } : null,
     subLayer: task.subLayer ? { name: task.subLayer.name } : null,
   }));
@@ -46,13 +60,14 @@ export default async function TasksPage({ searchParams }: { searchParams?: Promi
           </div>
           {session?.user.role !== "VIEWER" && (
             <Button asChild>
-              <Link href="/tasks/new"><Plus className="h-4 w-4" /> Create Task</Link>
+              <Link href="/tasks/new"><Plus className="h-4 w-4 mr-1" /> Create Task</Link>
             </Button>
           )}
         </CardHeader>
       </Card>
       <TaskBoard
         tasks={taskRows}
+        users={users}
         currentUserId={session?.user.id ?? ""}
         currentUserRole={session?.user.role ?? "VIEWER"}
       />

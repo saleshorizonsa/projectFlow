@@ -652,10 +652,14 @@ model Task {
   priority            Priority             @default(MEDIUM)
   assigneeId          String
   assignee            User                 @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  startDate           DateTime?
   dueDate             DateTime
   estimatedHours      Decimal              @db.Decimal(8, 2)
   actualHours         Decimal              @default(0) @db.Decimal(8, 2)
   status              TaskStatus           @default(NOT_STARTED)
+  parentTaskId        String?
+  parent              Task?                @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks            Task[]               @relation("TaskSubtasks")
   comments            Comment[]
   attachments         Attachment[]
   resourceAllocations ResourceAllocation[]
@@ -668,6 +672,7 @@ model Task {
   @@index([assigneeId])
   @@index([status])
   @@index([dueDate])
+  @@index([parentTaskId])
 }
 
 model Milestone {

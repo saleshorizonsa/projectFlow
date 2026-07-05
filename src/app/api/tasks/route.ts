@@ -3,10 +3,29 @@ import { getPrisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { taskSchema } from "@/lib/validators";
 
-export async function GET() {
+export async function GET(request: Request) {
   await requireRole("VIEWER");
+  const { searchParams } = new URL(request.url);
+  const status = searchParams.get("status") ?? undefined;
+  const priority = searchParams.get("priority") ?? undefined;
+  const assigneeId = searchParams.get("assigneeId") ?? undefined;
+  const parentTaskId = searchParams.get("parentTaskId") ?? undefined;
+
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+  if (assigneeId) where.assigneeId = assigneeId;
+  if (parentTaskId) where.parentTaskId = parentTaskId;
+
   const tasks = await getPrisma().task.findMany({
-    include: { project: true, assignee: true, layer: true, subLayer: true },
+    where,
+    include: {
+      project: { include: { companies: { include: { company: true } } } },
+      assignee: true,
+      layer: true,
+      subLayer: true,
+      _count: { select: { subtasks: true } },
+    },
     orderBy: { dueDate: "asc" },
   });
   return NextResponse.json(tasks);
