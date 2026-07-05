@@ -222,7 +222,7 @@ export function AssetRegisterTable({ assets, compact = false, canManage = false,
                             employees={employees}
                           />
                         )}
-                        <AssetQrButton assetTag={asset.assetTag} name={asset.name} type={asset.type} vendor={asset.vendor} location={asset.location} />
+                        <AssetQrButton id={asset.id} assetTag={asset.assetTag} name={asset.name} type={asset.type} vendor={asset.vendor} location={asset.location} />
                       </div>
                     </TableCell>
                   </TableRow>
