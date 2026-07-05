@@ -73,6 +73,16 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           <section className="grid gap-3 sm:grid-cols-2">
+            {employee.photoUrl && (
+              <div className="sm:col-span-2 flex items-center gap-4 mb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={employee.photoUrl} alt={employee.name} className="h-20 w-20 rounded-full object-cover ring-2 ring-border" />
+                <div>
+                  <div className="font-semibold text-lg">{employee.name}</div>
+                  <div className="text-sm text-muted-foreground">{employee.jobTitle} · {employee.department}</div>
+                </div>
+              </div>
+            )}
             <Info label="Employee" value={`${employee.employeeId} / ${employee.name}`} />
             <Info label="Status" value={formatEnum(employee.status)} />
             <Info label="Department" value={employee.department} />

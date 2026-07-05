@@ -50,6 +50,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     assets: employee.assets.map((asset) => ({ id: asset.id, assetTag: asset.assetTag, name: asset.name, type: asset.type })),
     licenses: employee.licenses.map((license) => ({ id: license.id, licenseId: license.licenseId, name: license.name, vendor: license.vendor })),
     openTickets: employee._count.supportTickets,
+    photoUrl: employee.photoUrl,
   }));
   const canManage = session?.user.role === "ADMIN" || session?.user.role === "PROJECT_MANAGER";
   const activeEmployees = rows.filter((employee) => employee.status === "ACTIVE").length;

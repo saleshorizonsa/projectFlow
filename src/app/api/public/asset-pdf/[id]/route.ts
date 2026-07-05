@@ -12,10 +12,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       employee: {
         select: {
           employeeId: true, name: true, department: true, jobTitle: true,
-          email: true, phone: true, location: true, status: true,
+          email: true, phone: true, location: true, status: true, photoUrl: true,
         },
       },
       companies: { include: { company: { select: { name: true, code: true } } } },
+
       licenses: { orderBy: { expiryDate: "asc" }, select: { licenseId: true, name: true, vendor: true, expiryDate: true } },
       maintenances: {
         orderBy: { scheduledAt: "desc" },
@@ -54,7 +55,7 @@ type AssetForPdf = {
   assignedTo: { name: string; email: string | null } | null;
   employee: {
     employeeId: string; name: string; department: string; jobTitle: string;
-    email: string | null; phone: string | null; location: string | null; status: string;
+    email: string | null; phone: string | null; location: string | null; status: string; photoUrl: string | null;
   } | null;
   companies: { company: { name: string; code: string } }[];
   licenses: { licenseId: string; name: string; vendor: string; expiryDate: Date }[];
@@ -68,6 +69,15 @@ function fmt(s: string) {
 }
 
 async function buildPdf(asset: AssetForPdf): Promise<Buffer> {
+  // Pre-fetch employee photo if available
+  let photoBuffer: Buffer | null = null;
+  if (asset.employee?.photoUrl) {
+    try {
+      const res = await fetch(asset.employee.photoUrl);
+      if (res.ok) photoBuffer = Buffer.from(await res.arrayBuffer());
+    } catch { /* ignore */ }
+  }
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: "A4" });
     const chunks: Buffer[] = [];
@@ -139,8 +149,20 @@ async function buildPdf(asset: AssetForPdf): Promise<Buffer> {
     section("2. Assigned Employee");
     if (asset.employee) {
       const e = asset.employee;
+      if (photoBuffer) {
+        doc.image(photoBuffer, 50, y, { width: 56, height: 56 });
+        const textX = 116;
+        const textW = W - 66;
+        const startY = y;
+        doc.fillColor(MUTED).fontSize(8.5).font("Helvetica-Bold").text("EMPLOYEE ID", textX, startY, { width: textW / 2 });
+        doc.fillColor("#111827").fontSize(9).font("Helvetica").text(e.employeeId, textX + textW / 2, startY, { width: textW / 2 });
+        doc.fillColor(MUTED).fontSize(8.5).font("Helvetica-Bold").text("FULL NAME", textX, startY + 14, { width: textW / 2 });
+        doc.fillColor("#111827").fontSize(9).font("Helvetica").text(e.name, textX + textW / 2, startY + 14, { width: textW / 2 });
+        y += 64;
+      } else {
+        twoCol([["Employee ID", e.employeeId], ["Full Name", e.name]]);
+      }
       twoCol([
-        ["Employee ID", e.employeeId],     ["Full Name", e.name],
         ["Department", e.department],      ["Job Title", e.jobTitle],
         ["Email", e.email ?? "Not captured"], ["Phone", e.phone ?? "Not captured"],
         ["Location", e.location ?? "Not captured"], ["Status", fmt(e.status)],

@@ -92,6 +92,16 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
           <section>
             <SectionTitle>1. Employee Details</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-2">
+              {employee.photoUrl && (
+                <div className="sm:col-span-2 flex items-center gap-4 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={employee.photoUrl} alt={employee.name} className="h-20 w-20 rounded-full object-cover ring-2 ring-border" />
+                  <div>
+                    <div className="font-semibold text-lg">{employee.name}</div>
+                    <div className="text-sm text-muted-foreground">{employee.jobTitle} · {employee.department}</div>
+                  </div>
+                </div>
+              )}
               <Info label="Full Name" value={employee.name} />
               <Info label="Employee ID" value={employee.employeeId} />
               <Info label="Department" value={employee.department} />

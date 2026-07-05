@@ -468,6 +468,7 @@ model Employee {
   department     String
   jobTitle       String
   location       String?
+  photoUrl       String?
   status         EmployeeStatus    @default(ACTIVE)
   ipAddress      String?
   vpnUserId      String?

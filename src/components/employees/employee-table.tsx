@@ -41,6 +41,7 @@ type EmployeeRow = {
   assets: AssetItem[];
   licenses: LicenseItem[];
   openTickets: number;
+  photoUrl: string | null;
 };
 
 const statuses = ["ACTIVE", "INACTIVE", "ON_LEAVE", "EXITED"];
@@ -287,18 +288,23 @@ export function EmployeeTable({
               {filtered.map((employee) => (
                 <TableRow key={employee.id}>
                   <TableCell>
-                    <Link href={`/employees/${employee.id}`} className="font-medium hover:underline">
-                      {employee.employeeId} / {employee.name}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">
-                      {employee.email ?? "No email"} / {employee.phone ?? "No phone"}
+                    <div className="flex items-center gap-2">
+                      <EmployeeAvatar name={employee.name} photoUrl={employee.photoUrl} size="sm" />
+                      <div>
+                        <Link href={`/employees/${employee.id}`} className="font-medium hover:underline">
+                          {employee.employeeId} / {employee.name}
+                        </Link>
+                        <div className="text-xs text-muted-foreground">
+                          {employee.email ?? "No email"} / {employee.phone ?? "No phone"}
+                        </div>
+                        {employee.status === "ON_LEAVE" && employee.leaveReturnDate && (
+                          <div className="text-xs text-amber-600 dark:text-amber-400">Returns: {employee.leaveReturnDate}</div>
+                        )}
+                        {employee.exitDate && (
+                          <div className="text-xs text-orange-600">Exited: {employee.exitDate}</div>
+                        )}
+                      </div>
                     </div>
-                    {employee.status === "ON_LEAVE" && employee.leaveReturnDate && (
-                      <div className="text-xs text-amber-600 dark:text-amber-400">Returns: {employee.leaveReturnDate}</div>
-                    )}
-                    {employee.exitDate && (
-                      <div className="text-xs text-orange-600">Exited: {employee.exitDate}</div>
-                    )}
                   </TableCell>
                   <TableCell>
                     <CompanyBadges companies={employee.companies} />
@@ -1568,6 +1574,12 @@ function EmployeeEditDialog({
             </div>
           </div>
 
+          {/* Photo uploader */}
+          <div className="space-y-3 md:col-span-2">
+            <Label>Profile Photo</Label>
+            <PhotoUploader employeeId={employee.id} currentPhotoUrl={employee.photoUrl} onRefresh={() => router.refresh()} />
+          </div>
+
           <div className="space-y-3 md:col-span-2">
             <Label>Companies</Label>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -1628,6 +1640,107 @@ function Field({
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       {children}
+    </div>
+  );
+}
+
+// ── Employee Avatar ───────────────────────────────────────────────────────────
+
+export function EmployeeAvatar({
+  name,
+  photoUrl,
+  size = "md",
+}: {
+  name: string;
+  photoUrl: string | null;
+  size?: "sm" | "md" | "lg";
+}) {
+  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const dim = size === "sm" ? "h-8 w-8 text-xs" : size === "lg" ? "h-16 w-16 text-xl" : "h-10 w-10 text-sm";
+
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={name}
+        className={`${dim} shrink-0 rounded-full object-cover ring-1 ring-border`}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} shrink-0 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary`}>
+      {initials}
+    </div>
+  );
+}
+
+// ── Photo Uploader ────────────────────────────────────────────────────────────
+
+function PhotoUploader({
+  employeeId,
+  currentPhotoUrl,
+  onRefresh,
+}: {
+  employeeId: string;
+  currentPhotoUrl: string | null;
+  onRefresh: () => void;
+}) {
+  const [preview, setPreview] = useState<string | null>(currentPhotoUrl);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/employees/${employeeId}/photo`, { method: "POST", body: fd });
+    const body = await res.json().catch(() => null);
+    if (res.ok) {
+      setPreview(body.photoUrl);
+      toast.success("Photo uploaded");
+      onRefresh();
+    } else {
+      toast.error(body?.error ?? "Upload failed");
+    }
+    setUploading(false);
+  }
+
+  async function handleRemove() {
+    setUploading(true);
+    const res = await fetch(`/api/employees/${employeeId}/photo`, { method: "DELETE" });
+    if (res.ok) {
+      setPreview(null);
+      toast.success("Photo removed");
+      onRefresh();
+    } else {
+      toast.error("Remove failed");
+    }
+    setUploading(false);
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <EmployeeAvatar name="" photoUrl={preview} size="lg" />
+      <div className="flex flex-col gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
+        />
+        <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
+          {uploading ? "Uploading…" : preview ? "Replace Photo" : "Upload Photo"}
+        </Button>
+        {preview && (
+          <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={uploading} onClick={handleRemove}>
+            Remove
+          </Button>
+        )}
+        <p className="text-xs text-muted-foreground">PNG, JPEG, or WebP · max 3 MB</p>
+      </div>
     </div>
   );
 }

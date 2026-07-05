@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EmployeeAvatar } from "@/components/employees/employee-table";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
@@ -80,9 +81,12 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
       <Card>
         <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-background to-background">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl">{employee.name}</CardTitle>
-              <CardDescription>{employee.employeeId} · {employee.jobTitle} · {employee.department}</CardDescription>
+            <div className="flex items-center gap-4">
+              <EmployeeAvatar name={employee.name} photoUrl={employee.photoUrl} size="lg" />
+              <div>
+                <CardTitle className="text-xl">{employee.name}</CardTitle>
+                <CardDescription>{employee.employeeId} · {employee.jobTitle} · {employee.department}</CardDescription>
+              </div>
             </div>
             <Badge variant={statusVariant(employee.status)} className="text-sm">{formatEnum(employee.status)}</Badge>
           </div>
