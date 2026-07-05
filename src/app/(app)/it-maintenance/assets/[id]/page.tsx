@@ -19,7 +19,7 @@ export default async function AssetDetailPage({ params }: PageProps) {
   const headersList = await headers();
   const host = headersList.get("host") ?? "localhost:3000";
   const proto = host.startsWith("localhost") ? "http" : "https";
-  const pageUrl = `${proto}://${host}/api/public/asset-pdf/${id}`;
+  const pageUrl = `${proto}://${host}/public/asset/${id}`;
   const qrDataUrl = await generateQrDataUrl(pageUrl);
 
   const asset = await getPrisma().iTAsset.findUnique({
