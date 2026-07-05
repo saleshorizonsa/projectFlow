@@ -173,12 +173,10 @@ export default function CompliancePage() {
   const framework = frameworks.find(f => f.id === activeFramework);
   const score = framework ? overallScore(framework) : null;
 
-  const nonCompliantControls = framework
-    ? framework.domains.flatMap(d => d.controls).filter(c => c.status === "NON_COMPLIANT")
-    : [];
-  const notAssessed = framework
-    ? framework.domains.flatMap(d => d.controls).filter(c => c.status === "NOT_ASSESSED").length
-    : 0;
+  const allControls = framework ? framework.domains.flatMap(d => d.controls) : [];
+  const nonCompliantControls = allControls.filter(c => c.status === "NON_COMPLIANT");
+  const notAssessed = allControls.filter(c => c.status === "NOT_ASSESSED").length;
+  const overdueReviews = allControls.filter(c => c.nextReviewAt && new Date(c.nextReviewAt) < new Date()).length;
 
   function openControl(c: Control) {
     setSelectedControl(c);
@@ -196,6 +194,7 @@ export default function CompliancePage() {
           </div>
           <div className="flex items-center gap-2">
             {nonCompliantControls.length > 0 && <Badge variant="destructive">{nonCompliantControls.length} non-compliant</Badge>}
+            {overdueReviews > 0 && <Badge variant="warning">{overdueReviews} review overdue</Badge>}
             {notAssessed > 0 && <Badge variant="outline">{notAssessed} not assessed</Badge>}
             <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
           </div>
@@ -279,6 +278,9 @@ export default function CompliancePage() {
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
                                 {c.findings.some(f => f.status === "OPEN") && <Badge variant="destructive" className="text-[9px] px-1 py-0">!</Badge>}
+                                {c.nextReviewAt && new Date(c.nextReviewAt) < new Date() && (
+                                  <Badge variant="warning" className="text-[9px] px-1 py-0" title={`Review overdue since ${new Date(c.nextReviewAt).toLocaleDateString("en-GB")}`}>↻</Badge>
+                                )}
                                 {c.evidences.length > 0 && <FileUp className="h-3 w-3 text-muted-foreground" />}
                                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
                               </div>

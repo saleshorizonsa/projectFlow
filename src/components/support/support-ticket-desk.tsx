@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageSquarePlus, Search, Send, Trash2 } from "lucide-react";
+import { Download, MessageSquarePlus, Search, Send, Trash2 } from "lucide-react";
 import { AttachmentSection } from "@/components/attachments/attachment-section";
 import { CommentSection } from "@/components/comments/comment-section";
 import { useRouter } from "next/navigation";
@@ -169,14 +169,21 @@ export function SupportTicketDesk({
       </Card>}
 
       {showTickets && <div className={showForm ? "space-y-3" : "space-y-3 xl:col-span-2"}>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search ticket no, title, employee…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-8 w-full"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search ticket no, title, employee…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 w-full"
+            />
+          </div>
+          <a href="/api/support-tickets/export" download>
+            <Button variant="outline" size="sm" className="h-10 shrink-0">
+              <Download className="mr-1.5 h-4 w-4" />Export CSV
+            </Button>
+          </a>
         </div>
         {filteredTickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} users={users} currentUserId={currentUserId} currentUserRole={currentUserRole} />)}
         {filteredTickets.length === 0 && (

@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   try {
     const body = await request.json();
-    const { name, email, roleId, phone, companyIds, password } = body;
+    const { name, email, roleId, phone, companyIds, password, unlock } = body;
 
     const prisma = getPrisma();
     const current = await prisma.user.findUnique({ where: { id }, include: { role: true } });
@@ -42,6 +42,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (roleId !== undefined) updateData.roleId = roleId;
     if (phone !== undefined) updateData.phone = phone || null;
     if (password) updateData.passwordHash = await hash(password, 12);
+    if (unlock) { updateData.failedLoginAttempts = 0; updateData.lockedUntil = null; }
     updateData.updatedBy = session.user.id;
 
     const user = await prisma.$transaction(async (tx) => {

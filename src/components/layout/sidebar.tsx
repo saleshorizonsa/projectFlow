@@ -100,6 +100,7 @@ type BadgeCounts = {
   criticalVulns?: number;
   highRisks?: number;
   overdueTasks?: number;
+  unreadNotifications?: number;
 };
 
 const BADGE_MAP: Record<string, keyof BadgeCounts> = {
@@ -107,6 +108,7 @@ const BADGE_MAP: Record<string, keyof BadgeCounts> = {
   "/vulnerability-management": "criticalVulns",
   "/risk-register": "highRisks",
   "/tasks": "overdueTasks",
+  "/notifications": "unreadNotifications",
 };
 
 export function Sidebar() {

@@ -3,9 +3,11 @@ import { EmployeeTable } from "@/components/employees/employee-table";
 import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
 import { safeDecryptField } from "@/lib/encrypt";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { selectedCompanyId, type CompanySearchParams } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
@@ -70,7 +72,12 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
               <CardTitle>Employee Management</CardTitle>
               <CardDescription>Maintain employees by company and connect issued assets, licenses, and IT support records.</CardDescription>
             </div>
-            <Badge variant="outline" className="w-fit">{companyId ? "Company filtered" : "All group companies"}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="w-fit">{companyId ? "Company filtered" : "All group companies"}</Badge>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/api/employees/export" download><Download className="mr-1.5 h-4 w-4" />Export CSV</a>
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import { Download, Plus, RefreshCw, Search } from "lucide-react";
 import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type Risk = {
@@ -259,6 +259,7 @@ export default function RiskRegisterPage() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [filter, setFilter] = useState({ status: "", category: "" });
   const [search, setSearch] = useState("");
+  const [riskPage, setRiskPage] = useState(1);
 
   function load() {
     const params = new URLSearchParams();
@@ -267,6 +268,7 @@ export default function RiskRegisterPage() {
   }
 
   useEffect(() => { load(); }, [filter.status]);
+  useEffect(() => { setRiskPage(1); }, [filter, search]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -275,6 +277,10 @@ export default function RiskRegisterPage() {
       (!q || r.riskId.toLowerCase().includes(q) || r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q))
     );
   }, [risks, filter.category, search]);
+
+  const PAGE_SIZE = 50;
+  const totalRiskPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pagedRisks = filtered.slice((riskPage - 1) * PAGE_SIZE, riskPage * PAGE_SIZE);
 
   const openRisks = risks.filter(r => r.status !== "CLOSED");
   const criticalCount = openRisks.filter(r => r.riskScore >= 15).length;
@@ -332,10 +338,21 @@ export default function RiskRegisterPage() {
               </SelectContent>
             </Select>
             <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/api/risks/export" download><Download className="mr-1.5 h-4 w-4" />Export CSV</a>
+            </Button>
           </div>
 
           <Card>
             <CardContent className="p-0">
+              <div className="flex items-center justify-between border-b px-4 py-2 text-sm text-muted-foreground">
+                <span>{filtered.length} risks</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" disabled={riskPage <= 1} onClick={() => setRiskPage(p => p - 1)}>← Prev</Button>
+                  <span>Page {riskPage} of {totalRiskPages}</span>
+                  <Button variant="ghost" size="sm" disabled={riskPage >= totalRiskPages} onClick={() => setRiskPage(p => p + 1)}>Next →</Button>
+                </div>
+              </div>
               <div className="overflow-auto rounded-md">
                 <Table>
                   <TableHeader>
@@ -354,7 +371,7 @@ export default function RiskRegisterPage() {
                     {filtered.length === 0 && (
                       <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No risks match the current filters. Use "Add Risk" to register the first risk.</TableCell></TableRow>
                     )}
-                    {filtered.map(r => (
+                    {pagedRisks.map(r => (
                       <TableRow key={r.id}>
                         <TableCell>
                           <div className="font-medium text-sm">{r.title}</div>

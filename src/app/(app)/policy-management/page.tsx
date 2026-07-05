@@ -373,7 +373,10 @@ export default function PolicyManagementPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {policies.length === 0 && (
           <div className="md:col-span-2 xl:col-span-3">
-            <Card><CardContent className="py-12 text-center text-muted-foreground">No policies yet. Create the first policy to start building your policy library.</CardContent></Card>
+            <Card><CardContent className="py-12 text-center">
+              <p className="text-muted-foreground mb-3">No policies yet. Create the first policy to start building your policy library.</p>
+              <AddPolicyDialog onCreated={load} />
+            </CardContent></Card>
           </div>
         )}
         {policies.map(p => {

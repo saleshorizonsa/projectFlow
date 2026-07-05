@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { LockOpen, Plus, Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -45,6 +45,8 @@ type UserRow = {
   roleName: string;
   companies: { id: string; name: string; code: string }[];
   createdAt: string;
+  failedLoginAttempts: number;
+  lockedUntil: string | null;
 };
 
 type RoleOption = { id: string; name: string };
@@ -125,6 +127,17 @@ export function UsersTable({
     return true;
   }
 
+  async function handleUnlock(id: string) {
+    setError(null);
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unlock: true }),
+    });
+    if (!res.ok) { setError(await safeJson(res, "Failed to unlock account")); return; }
+    startTransition(() => router.refresh());
+  }
+
   async function handleDelete(id: string) {
     setError(null);
     setIsDeleting(true);
@@ -182,13 +195,14 @@ export function UsersTable({
               <TableHead>Role</TableHead>
               <TableHead>Companies</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              <TableHead>Security</TableHead>
+              <TableHead className="w-24">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -238,7 +252,22 @@ export function UsersTable({
                   {new Date(user.createdAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
+                  {user.lockedUntil && new Date(user.lockedUntil) > new Date() ? (
+                    <Badge variant="destructive" className="text-[10px]">Locked</Badge>
+                  ) : user.failedLoginAttempts > 0 ? (
+                    <Badge variant="warning" className="text-[10px]">{user.failedLoginAttempts} fail{user.failedLoginAttempts > 1 ? "s" : ""}</Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">OK</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <div className="flex gap-1">
+                    {(user.failedLoginAttempts > 0 || (user.lockedUntil && new Date(user.lockedUntil) > new Date())) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600 hover:text-green-700"
+                        onClick={() => handleUnlock(user.id)} title="Unlock account">
+                        <LockOpen className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

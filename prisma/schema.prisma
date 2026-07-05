@@ -514,13 +514,17 @@ model Company {
   assets         ITAssetCompany[]
   users          UserCompany[]
   employees      EmployeeCompany[]
-  supportTickets SupportTicket[]
-  incidents      Incident[]
-  playbooks      IncidentPlaybook[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  createdBy      String?
-  updatedBy      String?
+  supportTickets  SupportTicket[]
+  incidents       Incident[]
+  playbooks       IncidentPlaybook[]
+  risks           Risk[]
+  vulnerabilities Vulnerability[]
+  backupJobs      BackupJob[]
+  policies        Policy[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  createdBy       String?
+  updatedBy       String?
 }
 
 model UserCompany {
@@ -1041,6 +1045,7 @@ model Risk {
   dueDate            DateTime?
   closedAt           DateTime?
   companyId          String?
+  company            Company?           @relation(fields: [companyId], references: [id], onDelete: SetNull)
   notes              String?
   incidents          IncidentRisk[]
   createdAt          DateTime           @default(now())
@@ -1099,6 +1104,7 @@ model Vulnerability {
   controlId         String?
   control           ComplianceControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
   companyId         String?
+  company           Company?           @relation(fields: [companyId], references: [id], onDelete: SetNull)
   notes             String?
   incidents         IncidentVulnerability[]
   createdAt         DateTime           @default(now())
@@ -1128,6 +1134,7 @@ model BackupJob {
   isActive      Boolean         @default(true)
   notes         String?
   companyId     String?
+  company       Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
   logs          BackupLog[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -1170,6 +1177,7 @@ model Policy {
   approver         User?                   @relation("PolicyApprover", fields: [approverId], references: [id], onDelete: SetNull)
   approvedAt       DateTime?
   companyId        String?
+  company          Company?                @relation(fields: [companyId], references: [id], onDelete: SetNull)
   versions         PolicyVersion[]
   acknowledgements PolicyAcknowledgement[]
   controls         PolicyControl[]

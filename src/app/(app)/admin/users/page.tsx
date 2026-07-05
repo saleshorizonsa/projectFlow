@@ -38,6 +38,8 @@ export default async function UsersPage() {
             code: uc.company.code,
           })),
           createdAt: u.createdAt.toISOString(),
+          failedLoginAttempts: u.failedLoginAttempts,
+          lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
         }))}
         roles={roles.map((r) => ({ id: r.id, name: r.name }))}
         companies={companies.map((c) => ({ id: c.id, name: c.name, code: c.code }))}

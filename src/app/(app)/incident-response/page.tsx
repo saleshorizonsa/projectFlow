@@ -697,7 +697,10 @@ export default function IncidentResponsePage() {
         <div className="grid gap-4 md:grid-cols-2">
           {displayedIncidents.length === 0 && (
             <div className="md:col-span-2">
-              <Card><CardContent className="py-12 text-center text-muted-foreground">No incidents found. Report one to start tracking your security events.</CardContent></Card>
+              <Card><CardContent className="py-12 text-center">
+                <p className="text-muted-foreground mb-3">No incidents found. Report one to start tracking your security events.</p>
+                <AddIncidentDialog onCreated={load} />
+              </CardContent></Card>
             </div>
           )}
           {displayedIncidents.map(inc => {

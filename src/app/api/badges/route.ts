@@ -10,7 +10,7 @@ export async function GET() {
 
   const now = new Date();
 
-  const [openIncidents, criticalVulns, highRisks, overdueTasks] =
+  const [openIncidents, criticalVulns, highRisks, overdueTasks, unreadNotifications] =
     await Promise.all([
       getPrisma()
         .incident.count({
@@ -46,7 +46,13 @@ export async function GET() {
           },
         })
         .catch(() => 0),
+
+      getPrisma()
+        .notification.count({
+          where: { userId: session.user.id, readAt: null },
+        })
+        .catch(() => 0),
     ]);
 
-  return NextResponse.json({ openIncidents, criticalVulns, highRisks, overdueTasks });
+  return NextResponse.json({ openIncidents, criticalVulns, highRisks, overdueTasks, unreadNotifications });
 }

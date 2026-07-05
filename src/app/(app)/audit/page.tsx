@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,10 +75,13 @@ function formatDate(d: string) {
 }
 
 export default function AuditPage() {
+  const PAGE_SIZE = 50;
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [logFilter, setLogFilter] = useState({ action: "", entity: "", search: "" });
+  const [logPage, setLogPage] = useState(1);
   const [findingFilter, setFindingFilter] = useState({ status: "", severity: "" });
+  const [detailLog, setDetailLog] = useState<AuditEntry | null>(null);
   const [findingOpen, setFindingOpen] = useState(false);
   const [newFinding, setNewFinding] = useState({ findingId: "", title: "", description: "", severity: "HIGH", status: "OPEN", notes: "" });
   const [pending, startTransition] = useTransition();
@@ -100,14 +103,18 @@ export default function AuditPage() {
 
   useEffect(() => { loadLogs(); }, [logFilter.action, logFilter.entity]);
   useEffect(() => { loadFindings(); }, [findingFilter.status, findingFilter.severity]);
+  useEffect(() => { setLogPage(1); }, [logFilter]);
 
-  const filteredLogs = logs.filter(l =>
+  const filteredLogs = useMemo(() => logs.filter(l =>
     !logFilter.search ||
     l.action.toLowerCase().includes(logFilter.search.toLowerCase()) ||
     l.entity?.toLowerCase().includes(logFilter.search.toLowerCase()) ||
     l.ip?.includes(logFilter.search) ||
     (l.user as { name?: string } | null | undefined)?.name?.toLowerCase().includes(logFilter.search.toLowerCase())
-  );
+  ), [logs, logFilter.search]);
+
+  const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
+  const pagedLogs = filteredLogs.slice((logPage - 1) * PAGE_SIZE, logPage * PAGE_SIZE);
 
   function submitFinding() {
     setError(null);
@@ -198,6 +205,14 @@ export default function AuditPage() {
 
           <Card>
             <CardContent className="p-0">
+              <div className="flex items-center justify-between border-b px-4 py-2 text-sm text-muted-foreground">
+                <span>{filteredLogs.length} events</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" disabled={logPage <= 1} onClick={() => setLogPage(p => p - 1)}>← Prev</Button>
+                  <span>Page {logPage} of {totalLogPages}</span>
+                  <Button variant="ghost" size="sm" disabled={logPage >= totalLogPages} onClick={() => setLogPage(p => p + 1)}>Next →</Button>
+                </div>
+              </div>
               <div className="overflow-auto rounded-md">
                 <Table>
                   <TableHeader>
@@ -214,14 +229,20 @@ export default function AuditPage() {
                     {filteredLogs.length === 0 && (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No audit events match the current filters.</TableCell></TableRow>
                     )}
-                    {filteredLogs.slice(0, 200).map(log => (
+                    {pagedLogs.map(log => (
                       <TableRow key={log.id}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(log.createdAt)}</TableCell>
                         <TableCell className="text-sm">{(log.user as { name?: string } | null | undefined)?.name ?? <span className="text-muted-foreground text-xs">System</span>}</TableCell>
                         <TableCell><Badge variant={(ACTION_COLORS[log.action] as "destructive" | "warning" | "success" | "secondary" | "outline") ?? "outline"}>{log.action}</Badge></TableCell>
                         <TableCell className="text-sm">{log.entity ? `${log.entity}${log.entityId ? ` / ${log.entityId.slice(0, 8)}` : ""}` : "—"}</TableCell>
                         <TableCell className="text-xs font-mono">{log.ip ?? "—"}</TableCell>
-                        <TableCell className="max-w-xs truncate text-xs text-muted-foreground">{log.detail ? JSON.stringify(log.detail) : "—"}</TableCell>
+                        <TableCell>
+                          {log.detail ? (
+                            <button className="max-w-xs truncate text-left text-xs text-muted-foreground hover:text-foreground hover:underline" onClick={() => setDetailLog(log)}>
+                              {JSON.stringify(log.detail).slice(0, 60)}{JSON.stringify(log.detail).length > 60 ? "…" : ""}
+                            </button>
+                          ) : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -298,7 +319,12 @@ export default function AuditPage() {
 
           <div className="space-y-3">
             {findings.length === 0 && (
-              <Card><CardContent className="py-12 text-center text-muted-foreground">No audit findings found.</CardContent></Card>
+              <Card><CardContent className="py-12 text-center">
+                <p className="text-muted-foreground mb-3">No audit findings logged yet. Use the button below to record your first finding.</p>
+                <Dialog open={findingOpen} onOpenChange={setFindingOpen}>
+                  <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" />Log First Finding</Button></DialogTrigger>
+                </Dialog>
+              </CardContent></Card>
             )}
             {findings.map(f => (
               <Card key={f.id}>
@@ -341,6 +367,39 @@ export default function AuditPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Audit event detail panel */}
+      <Dialog open={!!detailLog} onOpenChange={v => { if (!v) setDetailLog(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Event Detail</DialogTitle>
+          </DialogHeader>
+          {detailLog && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <span className="text-muted-foreground">Time</span><span>{formatDate(detailLog.createdAt)}</span>
+                <span className="text-muted-foreground">Action</span><span><Badge variant={(ACTION_COLORS[detailLog.action] as "destructive" | "warning" | "success" | "secondary" | "outline") ?? "outline"}>{detailLog.action}</Badge></span>
+                <span className="text-muted-foreground">Entity</span><span>{detailLog.entity ? `${detailLog.entity}${detailLog.entityId ? ` / ${detailLog.entityId}` : ""}` : "—"}</span>
+                <span className="text-muted-foreground">User</span><span>{(detailLog.user as { name?: string; email?: string } | null | undefined)?.name ?? "System"}</span>
+                <span className="text-muted-foreground">IP</span><span className="font-mono">{detailLog.ip ?? "—"}</span>
+              </div>
+              {detailLog.detail && (
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Detail</p>
+                  <div className="max-h-64 overflow-auto rounded border bg-muted/40 p-3">
+                    {Object.entries(detailLog.detail).map(([k, v]) => (
+                      <div key={k} className="flex gap-2 py-0.5 text-xs">
+                        <span className="w-32 shrink-0 font-mono text-muted-foreground">{k}</span>
+                        <span className="break-all font-mono">{typeof v === "object" ? JSON.stringify(v) : String(v ?? "—")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
