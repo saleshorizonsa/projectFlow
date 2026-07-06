@@ -10,6 +10,17 @@ import { formatEnum, trafficLight } from "@/lib/utils";
 
 const statIcons = [FolderKanban, Gauge, AlertTriangle, CheckCircle2, TriangleAlert, AlertTriangle, CalendarClock, ClipboardList];
 
+const statColors = [
+  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",   // Total Projects
+  "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",            // Active Projects
+  "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",             // Delayed Projects
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", // Completed Projects
+  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",         // Open Gaps
+  "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",     // Critical Gaps
+  "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",     // Upcoming Deadlines
+  "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",     // Tasks Due This Week
+];
+
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const companyId = await selectedCompanyId(searchParams);
   const [data, secPosture] = await Promise.all([
@@ -59,6 +70,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {statEntries.map(([label, value], index) => {
             const Icon = statIcons[index];
+            const color = statColors[index];
             return (
               <Card key={label} className="min-w-0">
                 <CardContent className="flex min-h-20 items-center justify-between gap-3 p-3">
@@ -66,7 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
                     <div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
                     <div className="mt-2 text-2xl font-semibold leading-none">{value}</div>
                   </div>
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${color}`}>
                     <Icon className="h-4 w-4" />
                   </div>
                 </CardContent>
@@ -79,10 +91,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
 
       <DashboardSection id="security">
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="sm:col-span-2">
-          <CardContent className="flex items-center gap-6 p-5">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-primary/20 bg-primary/5">
-              <Shield className="h-8 w-8 text-primary" />
+        <Card className="sm:col-span-2 overflow-hidden">
+          <CardContent className="flex items-center gap-6 p-5 bg-gradient-to-r from-violet-50 to-transparent dark:from-violet-950/25">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-violet-200 bg-violet-100 dark:border-violet-800 dark:bg-violet-900/40">
+              <Shield className="h-8 w-8 text-violet-600 dark:text-violet-400" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Security Posture</div>
@@ -95,27 +107,27 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-rose-400">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Open Incidents</p>
             <p className="mt-1 text-2xl font-bold">{secPosture.openIncidents}</p>
             {secPosture.criticalIncidents > 0 && <p className="mt-0.5 text-xs text-destructive">{secPosture.criticalIncidents} critical</p>}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-orange-400">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Critical Vulns</p>
             <p className="mt-1 text-2xl font-bold">{secPosture.criticalVulns}</p>
             {secPosture.highVulns > 0 && <p className="mt-0.5 text-xs text-orange-600 dark:text-orange-400">{secPosture.highVulns} high</p>}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-amber-400">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">High Risks</p>
             <p className="mt-1 text-2xl font-bold">{secPosture.highRisks}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-teal-400">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Policies Pending</p>
             <p className="mt-1 text-2xl font-bold">{secPosture.openPolicies}</p>
@@ -130,8 +142,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
 
       <DashboardSection id="resources">
       <section className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+        <Card className="xl:col-span-2 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-gradient-to-r from-teal-50 to-transparent pb-3 dark:from-teal-950/25">
             <CardTitle>Resource Allocation</CardTitle>
             <Badge variant="outline">{data.resourcePlanning.requirements.suggestedPeople} people needed</Badge>
           </CardHeader>
@@ -152,9 +164,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-gradient-to-r from-indigo-50 to-transparent pb-3 dark:from-indigo-950/25">
             <CardTitle>Team Requirement</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
+            <Users className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent className="max-h-[320px] space-y-2 overflow-y-auto pr-2">
             {data.resourcePlanning.dailyDemand.slice(0, 7).map((day) => (
@@ -173,8 +185,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
 
       <DashboardSection id="health">
       <section className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+        <Card className="xl:col-span-2 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-gradient-to-r from-emerald-50 to-transparent pb-3 dark:from-emerald-950/25">
             <CardTitle>Active Project Health</CardTitle>
             <Badge variant="outline">{data.projectHealth.length} active</Badge>
           </CardHeader>
@@ -205,8 +217,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
             {data.projectHealth.length === 0 && <p className="text-sm text-muted-foreground">No active projects to monitor.</p>}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-gradient-to-r from-amber-50 to-transparent pb-3 dark:from-amber-950/25">
             <CardTitle>Critical Deadline Watch</CardTitle>
             <Badge variant="outline">{data.gaps.length}</Badge>
           </CardHeader>
