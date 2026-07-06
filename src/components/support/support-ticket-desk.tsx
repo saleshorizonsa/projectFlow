@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, MessageSquarePlus, Search, Send, Trash2 } from "lucide-react";
+import { Download, MessageSquarePlus, Search, Send, Siren, Trash2 } from "lucide-react";
 import { AttachmentSection } from "@/components/attachments/attachment-section";
 import { CommentSection } from "@/components/comments/comment-section";
 import { useRouter } from "next/navigation";
@@ -207,6 +207,8 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
   const [waReply, setWaReply] = useState("");
   const [waMessage, setWaMessage] = useState<string | null>(null);
   const [waSending, setWaSending] = useState(false);
+  const [incidentRaised, setIncidentRaised] = useState(false);
+  const [incidentPending, setIncidentPending] = useState(false);
 
   function updateTicket() {
     setMessage(null);
@@ -258,6 +260,33 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
     });
   }
 
+  async function raiseIncident() {
+    if (!window.confirm(`Raise a security incident from ticket ${ticket.ticketNo}?`)) return;
+    setIncidentPending(true);
+    setMessage(null);
+    const severityMap: Record<string, string> = { CRITICAL: "CRITICAL", HIGH: "HIGH", MEDIUM: "MEDIUM", LOW: "LOW" };
+    const res = await fetch("/api/incidents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `[Escalated] ${ticket.title}`,
+        type: "OTHER",
+        severity: severityMap[ticket.priority] ?? "MEDIUM",
+        description: ticket.description,
+        companyId: ticket.companyId,
+        sourceTicketId: ticket.id,
+      }),
+    });
+    setIncidentPending(false);
+    if (res.ok) {
+      setIncidentRaised(true);
+      setMessage(`Incident raised from ${ticket.ticketNo}.`);
+    } else {
+      const body = await res.json().catch(() => null);
+      setMessage(body?.error ?? "Incident creation failed.");
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="gap-3">
@@ -296,7 +325,18 @@ function TicketCard({ ticket, users, currentUserId, currentUserRole }: { ticket:
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">Created {new Date(ticket.createdAt).toLocaleString()} / Updated {new Date(ticket.updatedAt).toLocaleString()}</div>
-          <Button onClick={updateTicket} disabled={pending}><MessageSquarePlus className="mr-2 h-4 w-4" />Update ticket</Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={raiseIncident}
+              disabled={incidentPending || incidentRaised}
+              title="Escalate this ticket to a security incident"
+            >
+              <Siren className="mr-2 h-4 w-4 text-rose-500" />
+              {incidentRaised ? "Incident Raised" : incidentPending ? "Raising…" : "Raise Incident"}
+            </Button>
+            <Button onClick={updateTicket} disabled={pending}><MessageSquarePlus className="mr-2 h-4 w-4" />Update ticket</Button>
+          </div>
         </div>
         {message && <p className="text-sm text-destructive">{message}</p>}
         {ticket.events.length > 0 && (

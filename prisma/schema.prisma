@@ -1261,6 +1261,7 @@ model Incident {
   assignedTo      User?                   @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   companyId       String?
   company         Company?                @relation(fields: [companyId], references: [id])
+  sourceTicketId  String?
   timeline        IncidentTimeline[]
   review          PostIncidentReview?
   assets          IncidentAsset[]

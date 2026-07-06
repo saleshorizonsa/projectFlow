@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, ChevronRight, Circle, FileUp, XCircle, MinusCircle, RefreshCw } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronRight, Circle, FileUp, XCircle, MinusCircle, RefreshCw } from "lucide-react";
 
 type ControlStatus = "NOT_ASSESSED" | "COMPLIANT" | "PARTIALLY_COMPLIANT" | "NON_COMPLIANT" | "NOT_APPLICABLE";
 
@@ -26,6 +26,7 @@ type Control = {
   nextReviewAt: string | null;
   evidences: { id: string; fileName: string; fileUrl: string; notes: string | null; createdAt: string }[];
   findings: { id: string; findingId: string; severity: string; status: string }[];
+  policyMappings: { id: string; policy: { id: string; title: string; category: string | null; status: string } }[];
 };
 
 type Domain = {
@@ -151,6 +152,36 @@ function ControlDetailDialog({ control, onUpdated }: { control: Control; onUpdat
           </div>
         </div>
       )}
+
+      <div>
+        <Label className="mb-2 flex items-center gap-1.5 block">
+          <BookOpen className="h-3.5 w-3.5 text-violet-600" />
+          Linked Policies
+          {control.policyMappings.length > 0 && (
+            <Badge variant="secondary" className="ml-1">{control.policyMappings.length}</Badge>
+          )}
+        </Label>
+        {control.policyMappings.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No policies mapped to this control yet.</p>
+        ) : (
+          <div className="space-y-1">
+            {control.policyMappings.map(({ id, policy }) => (
+              <div key={id} className="flex items-center justify-between rounded border px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <span className="truncate font-medium">{policy.title}</span>
+                  {policy.category && <span className="ml-2 text-xs text-muted-foreground">{policy.category}</span>}
+                </div>
+                <Badge
+                  variant={policy.status === "APPROVED" ? "success" : policy.status === "UNDER_REVIEW" ? "warning" : "secondary"}
+                  className="ml-2 shrink-0 text-[10px]"
+                >
+                  {policy.status.replace(/_/g, " ")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -280,6 +311,11 @@ export default function CompliancePage() {
                                 {c.findings.some(f => f.status === "OPEN") && <Badge variant="destructive" className="text-[9px] px-1 py-0">!</Badge>}
                                 {c.nextReviewAt && new Date(c.nextReviewAt) < new Date() && (
                                   <Badge variant="warning" className="text-[9px] px-1 py-0" title={`Review overdue since ${new Date(c.nextReviewAt).toLocaleDateString("en-GB")}`}>↻</Badge>
+                                )}
+                                {c.policyMappings.length > 0 && (
+                                  <span title={`${c.policyMappings.length} linked polic${c.policyMappings.length > 1 ? "ies" : "y"}`}>
+                                    <BookOpen className="h-3 w-3 text-violet-500" />
+                                  </span>
                                 )}
                                 {c.evidences.length > 0 && <FileUp className="h-3 w-3 text-muted-foreground" />}
                                 <ChevronRight className="h-3 w-3 text-muted-foreground" />

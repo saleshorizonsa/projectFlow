@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download } from "lucide-react";
+import { CheckCircle2, Clock, Download, XCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { selectedCompanyId, type CompanySearchParams } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
@@ -16,7 +16,7 @@ import { formatEnum } from "@/lib/utils";
 export default async function EmployeesPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const session = await auth();
   const companyId = await selectedCompanyId(searchParams);
-  const [employees, companies] = await Promise.all([
+  const [employees, companies, policyAcks] = await Promise.all([
     getPrisma().employee.findMany({
       where: companyId ? { companies: { some: { companyId } } } : {},
       include: {
@@ -28,6 +28,14 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
       orderBy: { name: "asc" },
     }),
     getPrisma().company.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    getPrisma().policyAcknowledgement.findMany({
+      where: companyId ? { employee: { companies: { some: { companyId } } } } : {},
+      include: {
+        policy: { select: { id: true, title: true, category: true, status: true } },
+        employee: { select: { id: true, name: true, employeeId: true, department: true } },
+      },
+      orderBy: { sentAt: "desc" },
+    }),
   ]);
   const companyOptions = companies.map((company) => ({ id: company.id, name: company.name, code: company.code }));
   const rows = employees.map((employee) => ({
@@ -62,6 +70,28 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
   const departments = new Set(rows.map((employee) => employee.department).filter(Boolean)).size;
   const assetRows = rows.flatMap((employee) => employee.assets.map((asset) => ({ ...asset, employee })));
   const licenseRows = rows.flatMap((employee) => employee.licenses.map((license) => ({ ...license, employee })));
+
+  // Policy acknowledgement stats per employee
+  const policyStatsByEmployee = new Map<string, { acknowledged: number; pending: number; declined: number; lastAcknowledgedAt: Date | null }>();
+  for (const ack of policyAcks) {
+    const existing = policyStatsByEmployee.get(ack.employeeId) ?? { acknowledged: 0, pending: 0, declined: 0, lastAcknowledgedAt: null };
+    if (ack.status === "ACKNOWLEDGED") {
+      existing.acknowledged++;
+      if (ack.acknowledgedAt && (!existing.lastAcknowledgedAt || ack.acknowledgedAt > existing.lastAcknowledgedAt)) {
+        existing.lastAcknowledgedAt = ack.acknowledgedAt;
+      }
+    } else if (ack.status === "DECLINED") {
+      existing.declined++;
+    } else {
+      existing.pending++;
+    }
+    policyStatsByEmployee.set(ack.employeeId, existing);
+  }
+  const policyRows = rows
+    .filter((e) => policyStatsByEmployee.has(e.id))
+    .map((e) => ({ ...e, policyStats: policyStatsByEmployee.get(e.id)! }));
+  const totalPoliciesPending = policyAcks.filter((a) => a.status === "PENDING").length;
+  const totalPoliciesDeclined = policyAcks.filter((a) => a.status === "DECLINED").length;
 
   return (
     <div className="space-y-5">
@@ -98,6 +128,12 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
             {canManage && <TabsTrigger value="import">Import CSV</TabsTrigger>}
             <TabsTrigger value="assets">Asset Custody</TabsTrigger>
             <TabsTrigger value="licenses">Licenses</TabsTrigger>
+            <TabsTrigger value="policies" className="relative">
+              Policies
+              {totalPoliciesPending > 0 && (
+                <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white leading-none">{totalPoliciesPending}</span>
+              )}
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -199,6 +235,95 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
                       </TableRow>
                     ))}
                     {licenseRows.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No assigned employee licenses found.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="policies">
+          <Card>
+            <CardHeader className="border-b bg-gradient-to-r from-violet-50 to-transparent pb-3 dark:from-violet-950/20">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CheckCircle2 className="h-4 w-4 text-violet-600" /> Policy Acknowledgement Status
+              </CardTitle>
+              <CardDescription>
+                {policyAcks.length} policy assignments across {policyStatsByEmployee.size} employee(s).
+                {totalPoliciesPending > 0 && <> <span className="font-medium text-amber-600">{totalPoliciesPending} pending</span>.</>}
+                {totalPoliciesDeclined > 0 && <> <span className="font-medium text-destructive">{totalPoliciesDeclined} declined</span>.</>}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[520px] overflow-auto rounded-b-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead className="text-center">
+                        <span className="flex items-center justify-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />Signed</span>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <span className="flex items-center justify-center gap-1"><Clock className="h-3.5 w-3.5 text-amber-500" />Pending</span>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <span className="flex items-center justify-center gap-1"><XCircle className="h-3.5 w-3.5 text-destructive" />Declined</span>
+                      </TableHead>
+                      <TableHead>Last Acknowledged</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {policyRows.map((row) => {
+                      const { acknowledged, pending, declined, lastAcknowledgedAt } = row.policyStats;
+                      const total = acknowledged + pending + declined;
+                      const allSigned = pending === 0 && declined === 0;
+                      const hasDeclined = declined > 0;
+                      const hasPending = pending > 0;
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            <div className="font-medium">{row.employeeId} / {row.name}</div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.department ?? "—"}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-semibold text-emerald-600">{acknowledged}</span>
+                            <span className="text-xs text-muted-foreground">/{total}</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {pending > 0
+                              ? <Badge variant="warning" className="tabular-nums">{pending}</Badge>
+                              : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {declined > 0
+                              ? <Badge variant="destructive" className="tabular-nums">{declined}</Badge>
+                              : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {lastAcknowledgedAt
+                              ? lastAcknowledgedAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                              : <span className="text-muted-foreground">Never</span>}
+                          </TableCell>
+                          <TableCell>
+                            {allSigned
+                              ? <Badge variant="success">Compliant</Badge>
+                              : hasDeclined
+                                ? <Badge variant="destructive">Action Required</Badge>
+                                : hasPending
+                                  ? <Badge variant="warning">Pending</Badge>
+                                  : <Badge variant="secondary">—</Badge>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {policyRows.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                          No policy acknowledgements found. Send policies to employees from the Policies module.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>

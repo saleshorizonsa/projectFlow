@@ -1,6 +1,7 @@
 import { ITAssetForm } from "@/components/it-maintenance/it-forms";
 import { AssetRegisterTable } from "@/components/it-maintenance/it-maintenance-tables";
 import { AssetLifecycleTab } from "@/components/it-maintenance/asset-lifecycle-tab";
+import { AssetSecurityTab } from "@/components/it-maintenance/asset-security-tab";
 import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,10 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
           take: 5,
           select: { scheduledAt: true, status: true },
         },
+        vulnerabilities: { select: { id: true, title: true, severity: true, status: true } },
+        risks: { select: { id: true, riskId: true, title: true, riskScore: true, status: true } },
+        backupJobs: { select: { id: true, name: true, lastStatus: true, lastRunAt: true, rpoHours: true } },
+        incidents: { include: { incident: { select: { id: true, incidentId: true, title: true, severity: true, status: true } } } },
       },
       orderBy: { updatedAt: "desc" },
     }),
@@ -85,6 +90,7 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
           <TabsTrigger value="register">Asset Register</TabsTrigger>
           {canManage && <TabsTrigger value="add">Add Asset</TabsTrigger>}
           <TabsTrigger value="lifecycle">Lifecycle & Warranty</TabsTrigger>
+          <TabsTrigger value="security">Security Profile</TabsTrigger>
           <TabsTrigger value="recommendations" className="relative">
             Recommendations
             {recommendations.length > 0 && (
@@ -113,6 +119,10 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
 
         <TabsContent value="lifecycle">
           <AssetLifecycleTab assets={assetsWithRecs} />
+        </TabsContent>
+
+        <TabsContent value="security">
+          <AssetSecurityTab assets={assetsWithRecs} />
         </TabsContent>
 
         <TabsContent value="recommendations">
