@@ -154,6 +154,7 @@ export const itAssetSchema = z.object({
   model: z.string().min(1),
   location: z.string().min(1),
   purchaseDate: z.coerce.date(),
+  warrantyExpiry: z.coerce.date().optional().nullable(),
   lifecycleYears: z.coerce.number().int().min(1).max(20),
   status: z.enum(["ACTIVE", "MAINTENANCE", "RETIRED", "PLANNED_REPLACEMENT"]),
   assignedToId: z.string().optional(),

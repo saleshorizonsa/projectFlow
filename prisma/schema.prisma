@@ -374,6 +374,7 @@ model ITAsset {
   model          String
   location       String
   purchaseDate   DateTime
+  warrantyExpiry DateTime?
   lifecycleYears Int              @default(5)
   status         ITAssetStatus    @default(ACTIVE)
   assignedToId   String?

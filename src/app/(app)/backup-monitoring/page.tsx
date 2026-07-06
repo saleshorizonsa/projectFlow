@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, Plus, RefreshCw, XCircle, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Clock, Plus, RefreshCw, XCircle, AlertCircle } from "lucide-react";
 import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type BackupLog = {
@@ -64,6 +64,93 @@ function rpoStatus(job: BackupJob): "ok" | "at-risk" | "breached" | "unknown" {
   if (hoursSince > job.rpoHours) return "breached";
   if (hoursSince > job.rpoHours * 0.8) return "at-risk";
   return "ok";
+}
+
+function streak(logs: BackupLog[]): { count: number; type: "success" | "failure" | "none" } {
+  if (!logs.length) return { count: 0, type: "none" };
+  const first = logs[0].status;
+  if (first !== "SUCCESS" && first !== "FAILED") return { count: 0, type: "none" };
+  let count = 0;
+  for (const log of logs) {
+    if (log.status === first) count++;
+    else break;
+  }
+  return { count, type: first === "SUCCESS" ? "success" : "failure" };
+}
+
+function RunHistoryPanel({ jobId }: { jobId: string }) {
+  const [logs, setLogs] = useState<BackupLog[] | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/backup-jobs/${jobId}/logs`)
+      .then(r => r.json())
+      .then(setLogs)
+      .catch(() => setLogs([]));
+  }, [jobId]);
+
+  if (!logs) {
+    return (
+      <TableRow>
+        <TableCell colSpan={9} className="bg-muted/40 py-4 text-center text-xs text-muted-foreground">
+          Loading run history…
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  const s = streak(logs);
+
+  return (
+    <TableRow>
+      <TableCell colSpan={9} className="bg-muted/30 p-0">
+        <div className="px-6 py-3">
+          <div className="mb-2 flex items-center justify-between gap-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Run History (last {logs.length})</p>
+            {s.type !== "none" && (
+              <Badge variant={s.type === "success" ? "success" : "destructive"}>
+                {s.count} consecutive {s.type === "success" ? "successes" : "failures"}
+              </Badge>
+            )}
+          </div>
+          {logs.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No runs logged yet.</p>
+          ) : (
+            <div className="overflow-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Started</TableHead>
+                    <TableHead className="text-xs">Duration</TableHead>
+                    <TableHead className="text-xs">Size</TableHead>
+                    <TableHead className="text-xs">Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map(log => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {STATUS_ICON[log.status]}
+                          <Badge variant={STATUS_VARIANT[log.status]} className="text-xs">{log.status}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(log.startedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </TableCell>
+                      <TableCell className="text-xs">{log.durationMinutes != null ? `${log.durationMinutes} min` : "—"}</TableCell>
+                      <TableCell className="text-xs">{formatBytes(log.sizeBytes)}</TableCell>
+                      <TableCell className="max-w-64 truncate text-xs text-destructive">{log.errorMessage ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 function AddJobDialog({ onCreated }: { onCreated: () => void }) {
@@ -181,12 +268,17 @@ function LogRunDialog({ job, onLogged }: { job: BackupJob; onLogged: () => void 
 
 export default function BackupMonitoringPage() {
   const [jobs, setJobs] = useState<BackupJob[]>([]);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
 
   function load() {
     fetch("/api/backup-jobs").then(r => r.json()).then(setJobs).catch(() => {});
   }
 
   useEffect(() => { load(); }, []);
+
+  function toggleExpand(id: string) {
+    setExpandedJobId(prev => prev === id ? null : id);
+  }
 
   const breached = jobs.filter(j => j.isActive && rpoStatus(j) === "breached").length;
   const atRisk = jobs.filter(j => j.isActive && rpoStatus(j) === "at-risk").length;
@@ -210,7 +302,6 @@ export default function BackupMonitoringPage() {
         </CardHeader>
       </Card>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           { label: "Total Jobs", value: jobs.length, color: "" },
@@ -233,6 +324,7 @@ export default function BackupMonitoringPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8" />
                   <TableHead>Job</TableHead>
                   <TableHead>Frequency</TableHead>
                   <TableHead>RPO Target</TableHead>
@@ -245,41 +337,48 @@ export default function BackupMonitoringPage() {
               </TableHeader>
               <TableBody>
                 {jobs.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-10">No backup jobs registered yet. Add a job to start tracking.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-10">No backup jobs registered yet. Add a job to start tracking.</TableCell></TableRow>
                 )}
                 {jobs.map(job => {
                   const rpo = rpoStatus(job);
                   const lastLog = job.logs?.[0];
+                  const isExpanded = expandedJobId === job.id;
                   return (
-                    <TableRow key={job.id}>
-                      <TableCell>
-                        <div className="font-medium text-sm">{job.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono">{job.jobId}</div>
-                        {job.asset && <div className="text-xs text-muted-foreground">{job.asset.assetTag} — {job.asset.name}</div>}
-                      </TableCell>
-                      <TableCell className="text-sm">{job.frequency}</TableCell>
-                      <TableCell className="text-sm">{job.rpoHours}h</TableCell>
-                      <TableCell>
-                        {rpo === "ok" && <Badge variant="success">OK</Badge>}
-                        {rpo === "at-risk" && <Badge variant="warning">At Risk</Badge>}
-                        {rpo === "breached" && <Badge variant="destructive">BREACHED</Badge>}
-                        {rpo === "unknown" && <Badge variant="secondary">No Data</Badge>}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {job.lastRunAt ? new Date(job.lastRunAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Never"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          {STATUS_ICON[job.lastStatus]}
-                          <Badge variant={STATUS_VARIANT[job.lastStatus]}>{job.lastStatus}</Badge>
-                        </div>
-                        {lastLog?.errorMessage && <p className="text-xs text-destructive mt-0.5">{lastLog.errorMessage}</p>}
-                      </TableCell>
-                      <TableCell className="text-sm">{formatBytes(job.lastSizeBytes?.toString() ?? null)}</TableCell>
-                      <TableCell>
-                        <LogRunDialog job={job} onLogged={load} />
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow key={job.id} className="cursor-pointer hover:bg-muted/40" onClick={() => toggleExpand(job.id)}>
+                        <TableCell className="text-muted-foreground">
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-sm">{job.name}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{job.jobId}</div>
+                          {job.asset && <div className="text-xs text-muted-foreground">{job.asset.assetTag} — {job.asset.name}</div>}
+                        </TableCell>
+                        <TableCell className="text-sm">{job.frequency}</TableCell>
+                        <TableCell className="text-sm">{job.rpoHours}h</TableCell>
+                        <TableCell>
+                          {rpo === "ok" && <Badge variant="success">OK</Badge>}
+                          {rpo === "at-risk" && <Badge variant="warning">At Risk</Badge>}
+                          {rpo === "breached" && <Badge variant="destructive">BREACHED</Badge>}
+                          {rpo === "unknown" && <Badge variant="secondary">No Data</Badge>}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {job.lastRunAt ? new Date(job.lastRunAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Never"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {STATUS_ICON[job.lastStatus]}
+                            <Badge variant={STATUS_VARIANT[job.lastStatus]}>{job.lastStatus}</Badge>
+                          </div>
+                          {lastLog?.errorMessage && <p className="text-xs text-destructive mt-0.5">{lastLog.errorMessage}</p>}
+                        </TableCell>
+                        <TableCell className="text-sm">{formatBytes(job.lastSizeBytes?.toString() ?? null)}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <LogRunDialog job={job} onLogged={load} />
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && <RunHistoryPanel key={`hist-${job.id}`} jobId={job.id} />}
+                    </>
                   );
                 })}
               </TableBody>

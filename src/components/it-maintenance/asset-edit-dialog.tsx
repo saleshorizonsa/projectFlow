@@ -47,6 +47,7 @@ export function AssetEditDialog({ asset, companies, users, employees }: Props) {
       model: asset.model,
       location: asset.location,
       purchaseDate: new Date(asset.purchaseDate),
+      warrantyExpiry: asset.warrantyExpiry ? new Date(asset.warrantyExpiry) : null,
       lifecycleYears: asset.lifecycleYears,
       status: asset.status as UpdateValues["status"],
       assignedToId: asset.assignedToId ?? "none",
@@ -96,6 +97,10 @@ export function AssetEditDialog({ asset, companies, users, employees }: Props) {
   const purchaseDateValue = form.watch("purchaseDate");
   const purchaseDateStr = purchaseDateValue
     ? new Date(purchaseDateValue).toISOString().split("T")[0]
+    : "";
+  const warrantyExpiryValue = form.watch("warrantyExpiry");
+  const warrantyExpiryStr = warrantyExpiryValue
+    ? new Date(warrantyExpiryValue).toISOString().split("T")[0]
     : "";
 
   return (
@@ -151,6 +156,14 @@ export function AssetEditDialog({ asset, companies, users, employees }: Props) {
                 type="date"
                 value={purchaseDateStr}
                 onChange={(e) => form.setValue("purchaseDate", new Date(e.target.value), { shouldDirty: true })}
+              />
+            </Field>
+            <Field label="Warranty Expiry (optional)" id="warrantyExpiry">
+              <Input
+                id="warrantyExpiry"
+                type="date"
+                value={warrantyExpiryStr}
+                onChange={(e) => form.setValue("warrantyExpiry", e.target.value ? new Date(e.target.value) : null, { shouldDirty: true })}
               />
             </Field>
             <Field label="Lifecycle Years" id="lifecycleYears">

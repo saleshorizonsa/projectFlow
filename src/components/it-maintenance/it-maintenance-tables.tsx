@@ -21,6 +21,7 @@ export type AssetTableRow = {
   model: string;
   location: string;
   purchaseDate: Date;
+  warrantyExpiry?: Date | null;
   lifecycleYears: number;
   status: string;
   notes?: string | null;

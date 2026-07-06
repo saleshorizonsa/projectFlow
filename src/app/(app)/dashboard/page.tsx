@@ -1,5 +1,6 @@
 import { AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Gauge, Shield, TriangleAlert, Users } from "lucide-react";
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
+import { DashboardSection, DashboardCustomizeButton } from "@/components/dashboard/dashboard-customize";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -39,7 +40,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
         <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground">
           <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
             <div>
-              <div className="text-sm font-medium opacity-85">Command Center</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium opacity-85">Command Center</div>
+                <DashboardCustomizeButton />
+              </div>
               <div className="mt-2 text-3xl font-semibold leading-none">HorizonMiyaar</div>
               <p className="mt-3 max-w-md text-sm leading-6 opacity-85">Live execution control for projects, gaps, deadlines, resources, and accountability.</p>
             </div>
@@ -51,26 +55,29 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           </CardContent>
         </Card>
 
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {statEntries.map(([label, value], index) => {
-          const Icon = statIcons[index];
-          return (
-            <Card key={label} className="min-w-0">
-              <CardContent className="flex min-h-20 items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
-                  <div className="mt-2 text-2xl font-semibold leading-none">{value}</div>
-                </div>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        </div>
+        <DashboardSection id="stats">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {statEntries.map(([label, value], index) => {
+            const Icon = statIcons[index];
+            return (
+              <Card key={label} className="min-w-0">
+                <CardContent className="flex min-h-20 items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
+                    <div className="mt-2 text-2xl font-semibold leading-none">{value}</div>
+                  </div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          </div>
+        </DashboardSection>
       </section>
 
+      <DashboardSection id="security">
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="sm:col-span-2">
           <CardContent className="flex items-center gap-6 p-5">
@@ -115,9 +122,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           </CardContent>
         </Card>
       </section>
+      </DashboardSection>
 
-      <AnalyticsCharts {...data.analytics} />
+      <DashboardSection id="analytics">
+        <AnalyticsCharts {...data.analytics} />
+      </DashboardSection>
 
+      <DashboardSection id="resources">
       <section className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
@@ -158,7 +169,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           </CardContent>
         </Card>
       </section>
+      </DashboardSection>
 
+      <DashboardSection id="health">
       <section className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
@@ -214,6 +227,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           </CardContent>
         </Card>
       </section>
+      </DashboardSection>
     </div>
   );
 }

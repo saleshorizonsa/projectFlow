@@ -1,5 +1,6 @@
 import { ITAssetForm } from "@/components/it-maintenance/it-forms";
 import { AssetRegisterTable } from "@/components/it-maintenance/it-maintenance-tables";
+import { AssetLifecycleTab } from "@/components/it-maintenance/asset-lifecycle-tab";
 import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +84,7 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
         <TabsList>
           <TabsTrigger value="register">Asset Register</TabsTrigger>
           {canManage && <TabsTrigger value="add">Add Asset</TabsTrigger>}
+          <TabsTrigger value="lifecycle">Lifecycle & Warranty</TabsTrigger>
           <TabsTrigger value="recommendations" className="relative">
             Recommendations
             {recommendations.length > 0 && (
@@ -108,6 +110,10 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
             <ITAssetForm companies={companyOptions} users={userOptions} employees={employeeOptions} />
           </TabsContent>
         )}
+
+        <TabsContent value="lifecycle">
+          <AssetLifecycleTab assets={assetsWithRecs} />
+        </TabsContent>
 
         <TabsContent value="recommendations">
           {recommendations.length === 0 ? (
