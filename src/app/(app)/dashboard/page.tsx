@@ -40,7 +40,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
             <div>
               <div className="text-sm font-medium opacity-85">Command Center</div>
-              <div className="mt-2 text-3xl font-semibold leading-none">ProjectFlow</div>
+              <div className="mt-2 text-3xl font-semibold leading-none">HorizonMiyaar</div>
               <p className="mt-3 max-w-md text-sm leading-6 opacity-85">Live execution control for projects, gaps, deadlines, resources, and accountability.</p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">

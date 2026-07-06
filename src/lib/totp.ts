@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { encryptField, decryptField } from "@/lib/encrypt";
 
-const ISSUER = "ProjectFlow";
+const ISSUER = "HorizonMiyaar";
 const TOTP_OPTIONS = { digits: 6 } as const;
 
 export function generateSecret(): string {
