@@ -25,6 +25,11 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
+  experimental: {
+    // Cache client-side router prefetch data for 30s (static) / 5s (dynamic)
+    // so clicking a nav link you've visited feels instant
+    staleTimes: { dynamic: 5, static: 30 },
+  },
   async headers() {
     return [{ source: "/(.*)", headers: SECURITY_HEADERS }];
   },

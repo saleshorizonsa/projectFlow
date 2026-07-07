@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { addDays, endOfWeek, format, startOfDay, startOfWeek, subDays } from "date-fns";
 import { getProjectHealthSummary } from "@/lib/deadline-engine";
 import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
@@ -5,7 +6,7 @@ import { getPrisma } from "@/lib/prisma";
 import { getResourcePlanningData } from "@/lib/resource-planning";
 import { formatEnum } from "@/lib/utils";
 
-export async function getDashboardData(companyId?: string) {
+async function _getDashboardData(companyId?: string) {
   const prisma = getPrisma();
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -114,7 +115,13 @@ export async function getDashboardData(companyId?: string) {
   };
 }
 
-export async function getSecurityPostureData(companyId?: string) {
+export const getDashboardData = unstable_cache(
+  _getDashboardData,
+  ["dashboard-data"],
+  { revalidate: 30, tags: ["dashboard"] },
+);
+
+async function _getSecurityPostureData(companyId?: string) {
   const prisma = getPrisma();
   // companyId is reserved for future multi-tenant scoping
   void companyId;
@@ -150,3 +157,9 @@ export async function getSecurityPostureData(companyId?: string) {
     return { score: null, openIncidents: 0, criticalIncidents: 0, criticalVulns: 0, highVulns: 0, highRisks: 0, openPolicies: 0 };
   }
 }
+
+export const getSecurityPostureData = unstable_cache(
+  _getSecurityPostureData,
+  ["security-posture"],
+  { revalidate: 30, tags: ["dashboard"] },
+);

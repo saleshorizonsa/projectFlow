@@ -11,15 +11,15 @@ import { getPrisma } from "@/lib/prisma";
 export default async function ITMaintenancePage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const prisma = getPrisma();
   const companyId = await selectedCompanyId(searchParams);
-  const [assets, maintenances, licenses, supportTickets] = await Promise.all([
+  const [assets, maintenances, licenses, supportTicketCount] = await Promise.all([
     prisma.iTAsset.findMany({ where: assetCompanyWhere(companyId), include: { assignedTo: true, employee: true, companies: { include: { company: true } } }, orderBy: { updatedAt: "desc" } }),
-    prisma.iTMaintenance.findMany({ where: relatedAssetCompanyWhere(companyId), include: { asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } }, responsible: true }, orderBy: { scheduledAt: "asc" } }),
-    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {}, include: { _count: { select: { assignments: true } }, asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } } }, orderBy: { expiryDate: "asc" } }),
-    prisma.supportTicket.findMany({ where: { ...(companyId ? { companyId } : {}), status: { notIn: ["RESOLVED", "CLOSED"] }, OR: [{ assetId: { not: null } }, { licenseId: { not: null } }] }, select: { id: true } }),
+    prisma.iTMaintenance.findMany({ where: { ...relatedAssetCompanyWhere(companyId), status: { not: "COMPLETED" }, scheduledAt: { gte: new Date() } }, include: { asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } }, responsible: true }, orderBy: { scheduledAt: "asc" }, take: 8 }),
+    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {}, include: { _count: { select: { assignments: true } }, asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } } }, orderBy: { expiryDate: "asc" }, take: 50 }),
+    prisma.supportTicket.count({ where: { ...(companyId ? { companyId } : {}), status: { notIn: ["RESOLVED", "CLOSED"] }, OR: [{ assetId: { not: null } }, { licenseId: { not: null } }] } }),
   ]);
   const now = new Date();
   const expiringLicenses = licenses.filter((license) => differenceInCalendarDays(license.expiryDate, now) <= 45);
-  const upcomingMaintenance = maintenances.filter((maintenance) => maintenance.status !== "COMPLETED" && differenceInCalendarDays(maintenance.scheduledAt, now) <= 30);
+  const upcomingMaintenance = maintenances; // already filtered to upcoming & incomplete at query level
   const upgradeAssets = assets.filter((asset) => hardwareRecommendation(asset.purchaseDate, asset.lifecycleYears).level !== "green");
 
   return (
@@ -36,7 +36,7 @@ export default async function ITMaintenancePage({ searchParams }: { searchParams
         <Metric title="Upcoming Maintenance" value={upcomingMaintenance.length} icon={CalendarClock} variant={upcomingMaintenance.length ? "warning" : "success"} />
         <Metric title="Licenses Expiring" value={expiringLicenses.length} icon={TriangleAlert} variant={expiringLicenses.length ? "destructive" : "success"} />
         <Metric title="Upgrade Review" value={upgradeAssets.length} icon={ShieldCheck} variant={upgradeAssets.length ? "warning" : "success"} />
-        <Metric title="Asset Support Tickets" value={supportTickets.length} icon={LifeBuoy} variant={supportTickets.length ? "warning" : "success"} />
+        <Metric title="Asset Support Tickets" value={supportTicketCount} icon={LifeBuoy} variant={supportTicketCount ? "warning" : "success"} />
       </section>
 
       <section className="grid gap-3 md:grid-cols-3">
