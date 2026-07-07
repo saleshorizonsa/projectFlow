@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
 import { itLicenseSchema } from "@/lib/validators";
+import { Prisma } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -24,17 +25,26 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!asset) return NextResponse.json({ error: "Linked asset does not exist." }, { status: 400 });
   }
 
-  const license = await getPrisma().iTLicense.update({
-    where: { id },
-    data: {
-      ...payload,
-      assetId: assetId === "" ? null : assetId,
-      employeeId: employeeId === "" ? null : employeeId,
-      updatedBy: session.user.id,
-    },
-  });
-
-  return NextResponse.json(license);
+  try {
+    const license = await getPrisma().iTLicense.update({
+      where: { id },
+      data: {
+        ...payload,
+        assetId: assetId === "" ? null : assetId,
+        employeeId: employeeId === "" ? null : employeeId,
+        updatedBy: session.user.id,
+      },
+    });
+    return NextResponse.json(license);
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "License ID already exists. Use a unique License ID." }, { status: 409 });
+    }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return NextResponse.json({ error: "License not found." }, { status: 404 });
+    }
+    return NextResponse.json({ error: "License could not be updated. Please try again." }, { status: 500 });
+  }
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {

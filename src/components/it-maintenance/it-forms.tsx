@@ -187,7 +187,7 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
       assetId: "",
       seats: 1,
       cost: 0,
-      expiryDate: new Date(),
+      expiryDate: "" as unknown as Date,
       owner: "",
       employeeId: "",
       notes: "",
@@ -205,7 +205,7 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
         return;
       }
       setMessage("License added.");
-      form.reset({ licenseId: "", name: "", vendor: "", assetId: values.assetId, seats: 1, cost: 0, expiryDate: new Date(), owner: "", employeeId: "", notes: "" });
+      form.reset({ licenseId: "", name: "", vendor: "", assetId: values.assetId, seats: 1, cost: 0, expiryDate: "" as unknown as Date, owner: "", employeeId: "", notes: "" });
       router.refresh();
     });
   }
