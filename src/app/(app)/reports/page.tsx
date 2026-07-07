@@ -31,18 +31,25 @@ type ReportData = {
   };
   companies: { id: string; name: string }[];
   selectedCompanyId: string;
+  periodMonths: number;
 };
+
+type ReportsSearchParams = CompanySearchParams & { period?: string };
 
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams?: Promise<CompanySearchParams>;
+  searchParams?: Promise<ReportsSearchParams>;
 }) {
   const prisma = getPrisma();
-  const companyId = await selectedCompanyId(searchParams);
+  const sp = await searchParams;
+  const companyId = await selectedCompanyId(sp);
 
   const now = new Date();
-  const twelveMonthsAgo = startOfMonth(subMonths(now, 11));
+  const periodMonths = Number(sp?.period ?? "12");
+  const validPeriods = [1, 3, 6, 12];
+  const months = validPeriods.includes(periodMonths) ? periodMonths : 12;
+  const twelveMonthsAgo = startOfMonth(subMonths(now, months - 1));
 
   // Closed statuses for tickets
   const closedStatuses = ["RESOLVED" as const, "CLOSED" as const];
@@ -161,7 +168,7 @@ export default async function ReportsPage({
   // ---------- serialise tickets monthly volume ----------
   // Build a map of the last 12 month labels in order
   const monthLabels: string[] = [];
-  for (let i = 11; i >= 0; i--) {
+  for (let i = months - 1; i >= 0; i--) {
     monthLabels.push(format(subMonths(now, i), "MMM yy"));
   }
   const monthCounts = new Map<string, number>(monthLabels.map((m) => [m, 0]));
@@ -260,6 +267,7 @@ export default async function ReportsPage({
     },
     companies,
     selectedCompanyId: companyId ?? "",
+    periodMonths: months,
   };
 
   return <ReportsDashboard data={reportData} />;

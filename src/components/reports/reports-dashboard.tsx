@@ -61,6 +61,7 @@ type ReportData = {
   };
   companies: { id: string; name: string }[];
   selectedCompanyId: string;
+  periodMonths: number;
 };
 
 function KpiCard({
@@ -147,9 +148,20 @@ export function ReportsDashboard({ data }: { data: ReportData }) {
     .filter((b) => b.name === "Review Due" || b.name === "Overdue")
     .reduce((sum, b) => sum + b.value, 0);
 
+  function buildUrl(companyId: string, period: number) {
+    const params = new URLSearchParams();
+    if (companyId && companyId !== "all") params.set("company", companyId);
+    if (period !== 12) params.set("period", String(period));
+    const qs = params.toString();
+    return qs ? `/reports?${qs}` : "/reports";
+  }
+
   function handleCompanyChange(value: string) {
-    const url = value === "all" ? "/reports" : `/reports?company=${value}`;
-    router.push(url);
+    router.push(buildUrl(value, data.periodMonths));
+  }
+
+  function handlePeriodChange(value: string) {
+    router.push(buildUrl(data.selectedCompanyId, Number(value)));
   }
 
   return (
@@ -162,10 +174,21 @@ export function ReportsDashboard({ data }: { data: ReportData }) {
             Live operational metrics across tickets, gaps, assets, and projects.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="shrink-0">
-            {new Date().getFullYear()}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            defaultValue={String(data.periodMonths)}
+            onValueChange={handlePeriodChange}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Last 30 days</SelectItem>
+              <SelectItem value="3">Last 3 months</SelectItem>
+              <SelectItem value="6">Last 6 months</SelectItem>
+              <SelectItem value="12">Last 12 months</SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             defaultValue={data.selectedCompanyId || "all"}
             onValueChange={handleCompanyChange}

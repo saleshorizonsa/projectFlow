@@ -23,3 +23,21 @@ export async function markAllRead() {
   });
   revalidatePath("/notifications");
 }
+
+export async function dismissOne(id: string) {
+  const session = await auth();
+  if (!session?.user.id) return;
+  await getPrisma().notification.deleteMany({
+    where: { id, userId: session.user.id },
+  });
+  revalidatePath("/notifications");
+}
+
+export async function dismissAllRead() {
+  const session = await auth();
+  if (!session?.user.id) return;
+  await getPrisma().notification.deleteMany({
+    where: { userId: session.user.id, readAt: { not: null } },
+  });
+  revalidatePath("/notifications");
+}

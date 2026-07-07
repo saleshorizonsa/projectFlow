@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, Palmtree } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Palmtree, UserCheck, UserMinus, UserX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { EmployeeAvatar } from "@/components/employees/employee-table";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
+import { updateEmployeeStatus } from "./actions";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -88,7 +89,34 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
                 <CardDescription>{employee.employeeId} · {employee.jobTitle} · {employee.department}</CardDescription>
               </div>
             </div>
-            <Badge variant={statusVariant(employee.status)} className="text-sm">{formatEnum(employee.status)}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={statusVariant(employee.status)} className="text-sm">{formatEnum(employee.status)}</Badge>
+              {canManage && (
+                <div className="flex gap-1">
+                  {employee.status !== "ACTIVE" && (
+                    <form action={updateEmployeeStatus.bind(null, employee.id, "ACTIVE")}>
+                      <Button type="submit" size="sm" variant="outline" className="h-7 gap-1 border-emerald-300 px-2 text-xs text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400">
+                        <UserCheck className="h-3 w-3" /> Set Active
+                      </Button>
+                    </form>
+                  )}
+                  {employee.status !== "ON_LEAVE" && (
+                    <form action={updateEmployeeStatus.bind(null, employee.id, "ON_LEAVE")}>
+                      <Button type="submit" size="sm" variant="outline" className="h-7 gap-1 border-amber-300 px-2 text-xs text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400">
+                        <UserMinus className="h-3 w-3" /> On Leave
+                      </Button>
+                    </form>
+                  )}
+                  {employee.status !== "EXITED" && (
+                    <form action={updateEmployeeStatus.bind(null, employee.id, "EXITED")}>
+                      <Button type="submit" size="sm" variant="outline" className="h-7 gap-1 border-rose-300 px-2 text-xs text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-400">
+                        <UserX className="h-3 w-3" /> Offboard
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-5">
@@ -281,6 +309,7 @@ function TicketTable({
           <TableHead>Priority</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Opened</TableHead>
+          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -294,6 +323,13 @@ function TicketTable({
             <TableCell><Badge variant={priorityVariant(t.priority)}>{formatEnum(t.priority)}</Badge></TableCell>
             <TableCell><Badge variant={ticketStatusVariant(t.status)}>{formatEnum(t.status)}</Badge></TableCell>
             <TableCell className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleDateString("en-GB")}</TableCell>
+            <TableCell>
+              <Button asChild size="icon" variant="ghost" className="h-7 w-7">
+                <Link href="/support/tickets" title="Open in ticket desk">
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                </Link>
+              </Button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
