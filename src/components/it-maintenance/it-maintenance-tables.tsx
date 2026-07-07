@@ -53,14 +53,12 @@ export type LicenseTableRow = {
   cost?: unknown;
   expiryDate: Date;
   owner?: string;
-  employeeId?: string | null;
   asset: AssetTableRow | null;
-  employee: Employee | null;
   notes?: string | null;
+  _count?: { assignments: number };
 };
 
 type AssetOption = { id: string; name: string; assetTag: string };
-type EmployeeOption = { id: string; name: string; employeeId: string };
 
 export function MaintenanceCalendarTable({ maintenances, compact = false }: { maintenances: MaintenanceTableRow[]; compact?: boolean }) {
   return (
@@ -98,7 +96,7 @@ export function MaintenanceCalendarTable({ maintenances, compact = false }: { ma
   );
 }
 
-export function LicenseExpiryTable({ licenses, compact = false, canManage = false, assets = [], employees = [] }: { licenses: LicenseTableRow[]; compact?: boolean; canManage?: boolean; assets?: AssetOption[]; employees?: EmployeeOption[] }) {
+export function LicenseExpiryTable({ licenses, compact = false, canManage = false, assets = [] }: { licenses: LicenseTableRow[]; compact?: boolean; canManage?: boolean; assets?: AssetOption[] }) {
   return (
     <Card>
       <CardHeader><CardTitle>License Expiry Tracker</CardTitle></CardHeader>
@@ -106,22 +104,25 @@ export function LicenseExpiryTable({ licenses, compact = false, canManage = fals
         <div className={compact ? "max-h-[420px] overflow-auto rounded-md border" : "overflow-auto rounded-md border"}>
           <Table>
             <TableHeader>
-              <TableRow><TableHead>License</TableHead><TableHead>Asset</TableHead><TableHead>Expiry</TableHead><TableHead>Risk</TableHead>{canManage && <TableHead className="text-right">Admin</TableHead>}</TableRow>
+              <TableRow><TableHead>License</TableHead><TableHead>Asset</TableHead><TableHead>Seats</TableHead><TableHead>Expiry</TableHead><TableHead>Risk</TableHead>{canManage && <TableHead className="text-right">Admin</TableHead>}</TableRow>
             </TableHeader>
             <TableBody>
               {licenses.map((license) => {
                 const risk = licenseRisk(license.expiryDate);
+                const used = license._count?.assignments ?? 0;
                 return (
                   <TableRow key={license.id}>
                     <TableCell>
                       <div className="font-medium">{license.name}</div>
-                      <div className="text-xs text-muted-foreground">{license.vendor} / {license.seats} seat(s)</div>
-                      <div className="text-xs text-muted-foreground">Employee: {license.employee ? `${license.employee.employeeId} / ${license.employee.name}` : "Unassigned"}</div>
+                      <div className="text-xs text-muted-foreground">{license.vendor}</div>
                     </TableCell>
                     <TableCell>
                       <div>{license.asset ? `${license.asset.assetTag} / ${license.asset.name}` : "Unlinked"}</div>
                       {license.asset && <div className="text-xs text-muted-foreground">Custodian: {license.asset.assignedTo?.name ?? "Unassigned"}</div>}
                       {license.asset && <CompanyBadges companies={license.asset.companies.map((link) => link.company)} />}
+                    </TableCell>
+                    <TableCell>
+                      <span className={used >= license.seats ? "font-semibold text-destructive" : ""}>{used}/{license.seats}</span>
                     </TableCell>
                     <TableCell>{license.expiryDate.toLocaleDateString()}</TableCell>
                     <TableCell><Badge variant={risk.variant}>{risk.label}</Badge></TableCell>
@@ -138,18 +139,16 @@ export function LicenseExpiryTable({ licenses, compact = false, canManage = fals
                             cost: Number(license.cost ?? 0),
                             expiryDate: license.expiryDate.toISOString(),
                             owner: license.owner ?? "",
-                            employeeId: license.employeeId ?? null,
                             notes: license.notes ?? null,
                           }}
                           assets={assets}
-                          employees={employees}
                         />
                       </TableCell>
                     )}
                   </TableRow>
                 );
               })}
-              {licenses.length === 0 && <TableRow><TableCell colSpan={canManage ? 5 : 4} className="text-center text-muted-foreground">No licenses tracked.</TableCell></TableRow>}
+              {licenses.length === 0 && <TableRow><TableCell colSpan={canManage ? 6 : 5} className="text-center text-muted-foreground">No licenses tracked.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

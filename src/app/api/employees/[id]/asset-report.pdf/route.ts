@@ -17,7 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
         include: { companies: { include: { company: true } } },
         orderBy: { assetTag: "asc" },
       },
-      licenses: { include: { asset: true }, orderBy: { expiryDate: "asc" } },
+      licenseAssignments: { orderBy: { assignedAt: "asc" }, include: { license: { include: { asset: true } } } },
     },
   });
 
@@ -41,7 +41,7 @@ export async function GET(_request: Request, context: RouteContext) {
       vendorModel: [a.vendor, a.model].filter(Boolean).join(" ").trim() || "-",
       status: formatEnum(a.status),
     })),
-    licenses: employee.licenses.map((lic) => ({
+    licenses: employee.licenseAssignments.map(({ license: lic }) => ({
       licenseId: lic.licenseId,
       name: lic.name,
       vendor: lic.vendor,

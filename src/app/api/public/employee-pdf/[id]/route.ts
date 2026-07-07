@@ -12,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         orderBy: { assetTag: "asc" },
         include: { companies: { include: { company: { select: { code: true } } } } },
       },
-      licenses: { orderBy: { expiryDate: "asc" }, include: { asset: { select: { assetTag: true, name: true } } } },
+      licenseAssignments: { orderBy: { assignedAt: "asc" }, include: { license: { include: { asset: { select: { assetTag: true, name: true } } } } } },
     },
   });
 
@@ -46,9 +46,8 @@ type EmployeeForPdf = {
     assetTag: string; name: string; vendor: string; model: string; type: string; status: string;
     companies: { company: { code: string } }[];
   }[];
-  licenses: {
-    licenseId: string; name: string; vendor: string; expiryDate: Date;
-    asset: { assetTag: string; name: string } | null;
+  licenseAssignments: {
+    license: { licenseId: string; name: string; vendor: string; expiryDate: Date; asset: { assetTag: string; name: string } | null };
   }[];
 };
 
@@ -156,7 +155,7 @@ async function buildPdf(employee: EmployeeForPdf, photoBuffer: Buffer | null): P
 
     // ── 3. Licenses Assigned ──────────────────────────────────────────────────
     section("3. Licenses Assigned");
-    if (employee.licenses.length > 0) {
+    if (employee.licenseAssignments.length > 0) {
       const cols = [W * 0.20, W * 0.28, W * 0.18, W * 0.20, W * 0.14];
       const headers = ["License ID", "Name", "Vendor", "Linked Asset", "Expiry"];
       doc.fillColor(MUTED).fontSize(8).font("Helvetica-Bold");
@@ -166,7 +165,7 @@ async function buildPdf(employee: EmployeeForPdf, photoBuffer: Buffer | null): P
       doc.moveTo(50, y).lineTo(50 + W, y).strokeColor("#e5e7eb").lineWidth(0.3).stroke();
       y += 4;
       const nowMs = now.getTime();
-      for (const lic of employee.licenses) {
+      for (const { license: lic } of employee.licenseAssignments) {
         const expired = new Date(lic.expiryDate).getTime() < nowMs;
         cx = 50;
         [

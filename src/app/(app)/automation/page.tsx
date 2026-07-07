@@ -21,7 +21,7 @@ export default async function AutomationPage() {
       orderBy: { resolveDueAt: "asc" },
       take: 10,
     }),
-    prisma.iTLicense.findMany({ where: { expiryDate: { lte: new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000) } }, include: { asset: true, employee: true }, orderBy: { expiryDate: "asc" }, take: 10 }),
+    prisma.iTLicense.findMany({ where: { expiryDate: { lte: new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000) } }, include: { asset: true, _count: { select: { assignments: true } } }, orderBy: { expiryDate: "asc" }, take: 10 }),
     prisma.iTAsset.findMany({ where: { status: { not: "RETIRED" } }, include: { assignedTo: true }, orderBy: { purchaseDate: "asc" }, take: 25 }),
     prisma.iTMaintenance.findMany({ where: { scheduledAt: { lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) }, status: { notIn: ["COMPLETED", "CANCELLED"] } }, include: { asset: true, responsible: true }, orderBy: { scheduledAt: "asc" }, take: 10 }),
     prisma.alertDelivery.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 12 }),

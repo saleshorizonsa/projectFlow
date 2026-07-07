@@ -16,9 +16,9 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
         orderBy: { assetTag: "asc" },
         select: { id: true, assetTag: true, name: true, vendor: true, model: true, type: true, status: true },
       },
-      licenses: {
-        orderBy: { expiryDate: "asc" },
-        include: { asset: { select: { assetTag: true, name: true } } },
+      licenseAssignments: {
+        orderBy: { assignedAt: "asc" },
+        include: { license: { include: { asset: { select: { assetTag: true, name: true } } } } },
       },
     },
   });
@@ -115,13 +115,13 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
         </div>
 
         {/* ── Licenses ── */}
-        {employee.licenses.length > 0 && (
+        {employee.licenseAssignments.length > 0 && (
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 font-semibold text-sm text-white" style={{ backgroundColor: NAVY }}>
-              Licenses Assigned ({employee.licenses.length})
+              Licenses Assigned ({employee.licenseAssignments.length})
             </div>
             <div className="divide-y divide-gray-100">
-              {employee.licenses.map((lic) => {
+              {employee.licenseAssignments.map(({ license: lic }) => {
                 const expired = new Date(lic.expiryDate) < now;
                 return (
                   <div key={lic.id} className="flex items-center justify-between px-4 py-3">

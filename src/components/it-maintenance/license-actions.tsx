@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DiscardChangesDialog } from "@/components/ui/discard-changes-dialog";
 
 type AssetOption = { id: string; name: string; assetTag: string };
-type EmployeeOption = { id: string; name: string; employeeId: string };
 type LicenseRow = {
   id: string;
   licenseId: string;
@@ -22,17 +21,15 @@ type LicenseRow = {
   cost: number;
   expiryDate: string;
   owner: string;
-  employeeId: string | null;
   notes: string | null;
 };
 
-export function LicenseActions({ license, assets, employees }: { license: LicenseRow; assets: AssetOption[]; employees: EmployeeOption[] }) {
+export function LicenseActions({ license, assets }: { license: LicenseRow; assets: AssetOption[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [assetId, setAssetId] = useState(license.assetId ?? "");
-  const [employeeId, setEmployeeId] = useState(license.employeeId ?? "");
   const [isDirty, setIsDirty] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
 
@@ -59,7 +56,6 @@ export function LicenseActions({ license, assets, employees }: { license: Licens
           cost: formData.get("cost"),
           expiryDate: formData.get("expiryDate"),
           owner: formData.get("owner"),
-          employeeId,
           notes: formData.get("notes"),
         }),
       });
@@ -104,7 +100,6 @@ export function LicenseActions({ license, assets, employees }: { license: Licens
             <Field label="Expiry Date" id="expiryDate"><Input id="expiryDate" name="expiryDate" type="date" defaultValue={license.expiryDate.slice(0, 10)} onChange={markDirty} /></Field>
             <Field label="Owner" id="owner"><Input id="owner" name="owner" defaultValue={license.owner} onChange={markDirty} /></Field>
             <Picker label="Linked Asset" value={assetId} onValueChange={(v) => { setAssetId(v); setIsDirty(true); }} items={[{ value: "none", label: "No asset" }, ...assets.map((asset) => ({ value: asset.id, label: `${asset.assetTag} / ${asset.name}` }))]} />
-            <Picker label="Employee Assignee" value={employeeId} onValueChange={(v) => { setEmployeeId(v); setIsDirty(true); }} items={[{ value: "none", label: "Unassigned" }, ...employees.map((employee) => ({ value: employee.id, label: `${employee.employeeId} / ${employee.name}` }))]} />
             <Field label="Notes" id="notes"><Input id="notes" name="notes" defaultValue={license.notes ?? ""} onChange={markDirty} /></Field>
             {message && <p className="text-sm text-destructive md:col-span-2">{message}</p>}
             <Button className="md:col-span-2" disabled={pending}>{pending ? "Saving..." : "Save license"}</Button>

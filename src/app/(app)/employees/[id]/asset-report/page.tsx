@@ -26,7 +26,7 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
     include: {
       companies: { include: { company: true } },
       assets: { include: { companies: { include: { company: true } } }, orderBy: { assetTag: "asc" } },
-      licenses: { include: { asset: true }, orderBy: { expiryDate: "asc" } },
+      licenseAssignments: { orderBy: { assignedAt: "asc" }, include: { license: { include: { asset: true } } } },
     },
   });
   if (!employee) notFound();
@@ -122,7 +122,7 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
               <table className="w-full text-sm">
                 <thead className="bg-muted text-left"><tr><th className="p-2">License</th><th className="p-2">Vendor</th><th className="p-2">Linked Asset</th><th className="p-2">Expiry</th></tr></thead>
                 <tbody>
-                  {employee.licenses.map((license) => (
+                  {employee.licenseAssignments.map(({ license }) => (
                     <tr key={license.id} className="border-t">
                       <td className="p-2"><div className="font-medium">{license.licenseId} / {license.name}</div></td>
                       <td className="p-2">{license.vendor}</td>
@@ -130,7 +130,7 @@ export default async function EmployeeAssetReportPage({ params }: PageProps) {
                       <td className="p-2">{license.expiryDate.toLocaleDateString()}</td>
                     </tr>
                   ))}
-                  {employee.licenses.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={4}>No licenses assigned.</td></tr>}
+                  {employee.licenseAssignments.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={4}>No licenses assigned.</td></tr>}
                 </tbody>
               </table>
             </div>

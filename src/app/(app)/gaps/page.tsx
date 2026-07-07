@@ -26,8 +26,8 @@ export default async function GapsPage({ searchParams }: { searchParams?: Promis
     orderBy: [{ severity: "desc" }, { targetClosureDate: "asc" }],
     }),
     prisma.iTLicense.findMany({
-      where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { employee: { companies: { some: { companyId } } } }, { assetId: null, employeeId: null }] } : {},
-      include: { asset: true, employee: true },
+      where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {},
+      include: { asset: true, _count: { select: { assignments: true } } },
       orderBy: { expiryDate: "asc" },
     }),
   ]);
@@ -102,7 +102,7 @@ export default async function GapsPage({ searchParams }: { searchParams?: Promis
                       <div className="text-xs text-muted-foreground">{license.vendor} / {license.licenseId}</div>
                     </TableCell>
                     <TableCell>{license.owner}</TableCell>
-                    <TableCell>{license.asset ? `${license.asset.assetTag} / ${license.asset.name}` : license.employee ? `${license.employee.employeeId} / ${license.employee.name}` : "Unlinked"}</TableCell>
+                    <TableCell>{license.asset ? `${license.asset.assetTag} / ${license.asset.name}` : "Unlinked"}</TableCell>
                     <TableCell>
                       <div>{license.expiryDate.toLocaleDateString()}</div>
                       <div className="text-xs text-muted-foreground">{days < 0 ? `${Math.abs(days)} days expired` : `${days} days left`}</div>

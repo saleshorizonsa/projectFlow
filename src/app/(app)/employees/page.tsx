@@ -22,7 +22,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
       include: {
         companies: { include: { company: true }, orderBy: { company: { name: "asc" } } },
         assets: { orderBy: { assetTag: "asc" } },
-        licenses: { orderBy: { expiryDate: "asc" } },
+        licenseAssignments: { include: { license: { select: { id: true, licenseId: true, name: true, vendor: true, expiryDate: true } } }, orderBy: { assignedAt: "asc" } },
         _count: { select: { supportTickets: { where: { status: { notIn: ["RESOLVED", "CLOSED"] } } } } },
       },
       orderBy: { name: "asc" },
@@ -58,7 +58,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams?: P
     offboardingNotes: employee.offboardingNotes,
     companies: employee.companies.map((link) => ({ id: link.company.id, name: link.company.name, code: link.company.code })),
     assets: employee.assets.map((asset) => ({ id: asset.id, assetTag: asset.assetTag, name: asset.name, type: asset.type })),
-    licenses: employee.licenses.map((license) => ({ id: license.id, licenseId: license.licenseId, name: license.name, vendor: license.vendor })),
+    licenses: employee.licenseAssignments.map((a) => ({ id: a.license.id, licenseId: a.license.licenseId, name: a.license.name, vendor: a.license.vendor, assignedAt: a.assignedAt.toISOString() })),
     openTickets: employee._count.supportTickets,
     photoUrl: employee.photoUrl,
   }));

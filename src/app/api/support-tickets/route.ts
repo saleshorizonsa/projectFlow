@@ -92,8 +92,7 @@ async function validateTicketLinks(companyId: string, employeeId?: string, asset
         id: licenseId,
         OR: [
           { asset: { companies: { some: { companyId } } } },
-          { employee: { companies: { some: { companyId } } } },
-          { assetId: null, employeeId: null },
+          { assetId: null },
         ],
       },
     });

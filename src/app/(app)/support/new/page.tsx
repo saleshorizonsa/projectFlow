@@ -10,7 +10,7 @@ export default async function NewSupportTicketPage({ searchParams }: { searchPar
     prisma.company.findMany({ where: companyId ? { id: companyId, active: true } : { active: true }, orderBy: { name: "asc" } }),
     prisma.employee.findMany({ where: companyId ? { companies: { some: { companyId } } } : {}, include: { companies: { include: { company: true } } }, orderBy: { name: "asc" } }),
     prisma.iTAsset.findMany({ where: assetCompanyWhere(companyId), include: { companies: { include: { company: true } } }, orderBy: { name: "asc" } }),
-    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { employee: { companies: { some: { companyId } } } }, { assetId: null, employeeId: null }] } : {}, include: { asset: true, employee: true }, orderBy: { name: "asc" } }),
+    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {}, include: { asset: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({ where: userCompanyWhere(companyId), orderBy: { name: "asc" } }),
   ]);
 
@@ -27,7 +27,7 @@ export default async function NewSupportTicketPage({ searchParams }: { searchPar
         companies={companies.map((company) => ({ id: company.id, name: company.name, code: company.code }))}
         employees={employees.map((employee) => ({ id: employee.id, name: `${employee.employeeId} / ${employee.name}`, companyIds: employee.companies.map((link) => link.companyId) }))}
         assets={assets.map((asset) => ({ id: asset.id, name: `${asset.assetTag} / ${asset.name}`, companyIds: asset.companies.map((link) => link.companyId) }))}
-        licenses={licenses.map((license) => ({ id: license.id, name: license.asset ? `${license.name} / ${license.asset.assetTag}` : license.employee ? `${license.name} / ${license.employee.employeeId}` : license.name }))}
+        licenses={licenses.map((license) => ({ id: license.id, name: license.asset ? `${license.name} / ${license.asset.assetTag}` : license.name }))}
         users={users.map((user) => ({ id: user.id, name: user.name }))}
         showTickets={false}
       />

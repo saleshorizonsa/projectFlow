@@ -55,7 +55,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           },
         } : {}),
       },
-      include: { companies: { include: { company: true } }, assets: true, licenses: true },
+      include: { companies: { include: { company: true } }, assets: true, licenseAssignments: true },
     });
 
     return NextResponse.json(employee);
@@ -88,7 +88,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   await getPrisma().$transaction([
     getPrisma().iTAsset.updateMany({ where: { employeeId: id }, data: { employeeId: null } }),
-    getPrisma().iTLicense.updateMany({ where: { employeeId: id }, data: { employeeId: null } }),
     getPrisma().employee.delete({ where: { id } }),
   ]);
   return NextResponse.json({ ok: true });

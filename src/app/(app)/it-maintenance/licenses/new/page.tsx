@@ -7,10 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 export default async function NewLicensePage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const session = await auth();
   const companyId = await selectedCompanyId(searchParams);
-  const [assets, employees] = await Promise.all([
-    getPrisma().iTAsset.findMany({ where: assetCompanyWhere(companyId), orderBy: { assetTag: "asc" } }),
-    getPrisma().employee.findMany({ where: companyId ? { companies: { some: { companyId } } } : {}, orderBy: { name: "asc" } }),
-  ]);
+  const assets = await getPrisma().iTAsset.findMany({ where: assetCompanyWhere(companyId), orderBy: { assetTag: "asc" } });
 
   return (
     <div className="space-y-5">
@@ -20,7 +17,7 @@ export default async function NewLicensePage({ searchParams }: { searchParams?: 
           <CardDescription>Create a license or subscription record. After creation, only admin users can edit it.</CardDescription>
         </CardHeader>
       </Card>
-      {session?.user.role !== "VIEWER" && <ITLicenseForm assets={assets.map((asset) => ({ id: asset.id, name: asset.name, assetTag: asset.assetTag }))} employees={employees.map((employee) => ({ id: employee.id, name: employee.name, employeeId: employee.employeeId }))} />}
+      {session?.user.role !== "VIEWER" && <ITLicenseForm assets={assets.map((asset) => ({ id: asset.id, name: asset.name, assetTag: asset.assetTag }))} />}
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default async function ITMaintenancePage({ searchParams }: { searchParams
   const [assets, maintenances, licenses, supportTickets] = await Promise.all([
     prisma.iTAsset.findMany({ where: assetCompanyWhere(companyId), include: { assignedTo: true, employee: true, companies: { include: { company: true } } }, orderBy: { updatedAt: "desc" } }),
     prisma.iTMaintenance.findMany({ where: relatedAssetCompanyWhere(companyId), include: { asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } }, responsible: true }, orderBy: { scheduledAt: "asc" } }),
-    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }, { employee: { companies: { some: { companyId } } } }] } : {}, include: { employee: true, asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } } }, orderBy: { expiryDate: "asc" } }),
+    prisma.iTLicense.findMany({ where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {}, include: { _count: { select: { assignments: true } }, asset: { include: { assignedTo: true, employee: true, companies: { include: { company: true } } } } }, orderBy: { expiryDate: "asc" } }),
     prisma.supportTicket.findMany({ where: { ...(companyId ? { companyId } : {}), status: { notIn: ["RESOLVED", "CLOSED"] }, OR: [{ assetId: { not: null } }, { licenseId: { not: null } }] }, select: { id: true } }),
   ]);
   const now = new Date();

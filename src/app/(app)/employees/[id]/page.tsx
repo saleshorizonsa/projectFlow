@@ -21,7 +21,7 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
     include: {
       companies: { include: { company: true } },
       assets: { orderBy: { assetTag: "asc" } },
-      licenses: { orderBy: { name: "asc" } },
+      licenseAssignments: { orderBy: { assignedAt: "asc" }, include: { license: true } },
       supportTickets: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -176,7 +176,7 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Software Licenses</CardTitle>
-            <CardDescription>{employee.licenses.length} assigned</CardDescription>
+            <CardDescription>{employee.licenseAssignments.length} assigned</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-64 overflow-auto">
@@ -189,7 +189,7 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employee.licenses.map(l => (
+                  {employee.licenseAssignments.map(({ license: l }) => (
                     <TableRow key={l.id}>
                       <TableCell>
                         <div className="font-medium">{l.licenseId}</div>
@@ -201,7 +201,7 @@ export default async function EmployeeProfilePage({ params }: PageProps) {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {employee.licenses.length === 0 && (
+                  {employee.licenseAssignments.length === 0 && (
                     <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No licenses assigned.</TableCell></TableRow>
                   )}
                 </TableBody>

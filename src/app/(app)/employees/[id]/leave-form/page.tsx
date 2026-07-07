@@ -26,7 +26,7 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
     include: {
       companies: { include: { company: true } },
       assets: { orderBy: { assetTag: "asc" } },
-      licenses: { orderBy: { expiryDate: "asc" } },
+      licenseAssignments: { orderBy: { assignedAt: "asc" }, include: { license: true } },
       supportTickets: {
         where: { status: { notIn: ["RESOLVED", "CLOSED"] } },
         select: { id: true, ticketNo: true, title: true, status: true, priority: true },
@@ -183,7 +183,7 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {employee.licenses.map(lic => (
+                  {employee.licenseAssignments.map(({ license: lic }) => (
                     <tr key={lic.id} className="border-t">
                       <td className="p-2 font-medium">{lic.licenseId}</td>
                       <td className="p-2">{lic.name}</td>
@@ -192,7 +192,7 @@ export default async function EmployeeLeaveFormPage({ params }: PageProps) {
                       <td className="p-2 text-center"><Checkbox /></td>
                     </tr>
                   ))}
-                  {employee.licenses.length === 0 && (
+                  {employee.licenseAssignments.length === 0 && (
                     <tr><td className="p-3 text-muted-foreground" colSpan={5}>No licenses assigned — clearance not required.</td></tr>
                   )}
                 </tbody>

@@ -7,7 +7,7 @@ import { Prisma } from "@prisma/client";
 export async function GET() {
   await requireRole("VIEWER");
   const licenses = await getPrisma().iTLicense.findMany({
-    select: { id: true, licenseId: true, name: true, vendor: true, employeeId: true, assetId: true, expiryDate: true },
+    select: { id: true, licenseId: true, name: true, vendor: true, assetId: true, expiryDate: true, _count: { select: { assignments: true } } },
     orderBy: { name: "asc" },
   });
   return NextResponse.json(licenses);
@@ -21,17 +21,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid license data", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { assetId, employeeId, ...payload } = parsed.data;
-  if (employeeId) {
-    const employee = await getPrisma().employee.findUnique({ where: { id: employeeId } });
-    if (!employee) return NextResponse.json({ error: "Employee assignee does not exist." }, { status: 400 });
-  }
+  const { assetId, ...payload } = parsed.data;
   try {
     const license = await getPrisma().iTLicense.create({
       data: {
         ...payload,
         assetId: assetId || null,
-        employeeId: employeeId || null,
         createdBy: session.user.id,
       },
     });

@@ -174,7 +174,7 @@ export function ITMaintenanceForm({ assets, users }: { assets: AssetOption[]; us
   );
 }
 
-export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; employees: EmployeeOption[] }) {
+export function ITLicenseForm({ assets }: { assets: AssetOption[] }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -189,7 +189,6 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
       cost: 0,
       expiryDate: "" as unknown as Date,
       owner: "",
-      employeeId: "",
       notes: "",
     },
   });
@@ -205,7 +204,7 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
         return;
       }
       setMessage("License added.");
-      form.reset({ licenseId: "", name: "", vendor: "", assetId: values.assetId, seats: 1, cost: 0, expiryDate: "" as unknown as Date, owner: "", employeeId: "", notes: "" });
+      form.reset({ licenseId: "", name: "", vendor: "", assetId: values.assetId, seats: 1, cost: 0, expiryDate: "" as unknown as Date, owner: "", notes: "" });
       router.refresh();
     });
   }
@@ -223,7 +222,6 @@ export function ITLicenseForm({ assets, employees }: { assets: AssetOption[]; em
           <Field label="Cost" id="cost"><Input id="cost" type="number" min="0" step="0.01" {...form.register("cost")} /></Field>
           <Field label="Expiry Date" id="expiryDate"><Input id="expiryDate" type="date" {...form.register("expiryDate")} /></Field>
           <Field label="Owner" id="owner"><Input id="owner" placeholder="IT / Finance / Business owner" {...form.register("owner")} /></Field>
-          <Picker label="Employee Assignee" value={form.watch("employeeId") ?? ""} onValueChange={(value) => form.setValue("employeeId", value)} items={[{ value: "none", label: "Unassigned" }, ...employees.map((employee) => ({ value: employee.id, label: `${employee.employeeId} / ${employee.name}` }))]} />
           <Field className="md:col-span-2 xl:col-span-3" label="Notes" id="licenseNotes"><Input id="licenseNotes" placeholder="Renewal terms, PO, support contact" {...form.register("notes")} /></Field>
           {message && <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-4">{message}</p>}
           <Button className="md:col-span-2 xl:col-span-4" disabled={pending}>{pending ? "Adding..." : "Add license"}</Button>

@@ -66,7 +66,7 @@ async function syncLicenseRenewals(prisma: PrismaClient, now: Date) {
   const soon = addDays(now, 45);
   const licenses = await prisma.iTLicense.findMany({
     where: { expiryDate: { lte: soon } },
-    include: { asset: { include: { assignedTo: true, companies: { include: { company: true } } } }, employee: true },
+    include: { asset: { include: { assignedTo: true, companies: { include: { company: true } } } } },
   });
   const admins = await adminUsers(prisma);
   const custodianIds = [...new Set(licenses.map((l) => l.asset?.assignedToId).filter(Boolean) as string[])];

@@ -448,8 +448,7 @@ model ITLicense {
   cost           Decimal         @default(0) @db.Decimal(14, 2)
   expiryDate     DateTime
   owner          String
-  employeeId     String?
-  employee       Employee?       @relation("EmployeeLicenses", fields: [employeeId], references: [id], onDelete: SetNull)
+  assignments    LicenseAssignment[]
   supportTickets SupportTicket[]
   notes          String?
   createdAt      DateTime        @default(now())
@@ -458,6 +457,21 @@ model ITLicense {
   updatedBy      String?
 
   @@index([expiryDate])
+}
+
+model LicenseAssignment {
+  id         String    @id @default(cuid())
+  licenseId  String
+  license    ITLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  assignedAt DateTime  @default(now())
+  assignedBy String?
+  notes      String?
+
+  @@unique([licenseId, employeeId])
+  @@index([licenseId])
+  @@index([employeeId])
 }
 
 model Employee {
@@ -482,7 +496,7 @@ model Employee {
   companies        EmployeeCompany[]
   assets         ITAsset[]               @relation("EmployeeAssets")
   policyAcknowledgements PolicyAcknowledgement[]
-  licenses       ITLicense[]       @relation("EmployeeLicenses")
+  licenseAssignments LicenseAssignment[]
   supportTickets SupportTicket[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt

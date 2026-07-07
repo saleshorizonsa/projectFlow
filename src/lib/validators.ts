@@ -188,7 +188,6 @@ export const itLicenseSchema = z.object({
   cost: z.coerce.number().nonnegative(),
   expiryDate: z.coerce.date(),
   owner: z.string().min(1),
-  employeeId: z.string().optional(),
   notes: z.string().optional(),
 });
 

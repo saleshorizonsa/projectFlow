@@ -15,11 +15,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid license data", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { assetId, employeeId, ...payload } = parsed.data;
-  if (employeeId) {
-    const employee = await getPrisma().employee.findUnique({ where: { id: employeeId } });
-    if (!employee) return NextResponse.json({ error: "Employee assignee does not exist." }, { status: 400 });
-  }
+  const { assetId, ...payload } = parsed.data;
   if (assetId) {
     const asset = await getPrisma().iTAsset.findUnique({ where: { id: assetId } });
     if (!asset) return NextResponse.json({ error: "Linked asset does not exist." }, { status: 400 });
@@ -31,7 +27,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: {
         ...payload,
         assetId: assetId === "" ? null : assetId,
-        employeeId: employeeId === "" ? null : employeeId,
         updatedBy: session.user.id,
       },
     });

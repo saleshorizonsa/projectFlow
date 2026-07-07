@@ -9,7 +9,7 @@ export async function GET() {
     include: {
       companies: { include: { company: true } },
       assets: true,
-      licenses: true,
+      licenseAssignments: { include: { license: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         create: companyIds.map((companyId) => ({ companyId, createdBy: session.user.id })),
       },
     },
-    include: { companies: { include: { company: true } }, assets: true, licenses: true },
+    include: { companies: { include: { company: true } }, assets: true, licenseAssignments: { include: { license: true } } },
   });
 
   return NextResponse.json(employee, { status: 201 });

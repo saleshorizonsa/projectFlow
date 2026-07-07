@@ -70,7 +70,7 @@ async function createTicketFromWhatsApp(input: { body: string; from: string; mes
 
   const employee = await prisma.employee.findFirst({
     where: { phone: { contains: input.from } },
-    include: { companies: { include: { company: true } }, assets: true, licenses: true },
+    include: { companies: { include: { company: true } }, assets: true, licenseAssignments: true },
   });
   const company = employee?.companies[0]?.company
     ?? await prisma.company.findFirst({ where: process.env.WHATSAPP_DEFAULT_COMPANY_ID ? { id: process.env.WHATSAPP_DEFAULT_COMPANY_ID } : { active: true }, orderBy: { name: "asc" } });
@@ -88,7 +88,7 @@ async function createTicketFromWhatsApp(input: { body: string; from: string; mes
       companyId: company.id,
       employeeId: employee?.id ?? null,
       assetId: employee?.assets[0]?.id ?? null,
-      licenseId: employee?.licenses[0]?.id ?? null,
+      licenseId: employee?.licenseAssignments[0]?.licenseId ?? null,
       category: "OTHER",
       priority: "MEDIUM",
       status: "OPEN",
