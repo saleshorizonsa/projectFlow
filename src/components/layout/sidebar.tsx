@@ -14,9 +14,6 @@ const navSections = [
     label: "Overview",
     items: [
       { href: "/dashboard", label: "Command Center", icon: Gauge },
-      { href: "/calendar", label: "IT Operations Calendar", icon: Calendar },
-      { href: "/resources", label: "Resource Allocation", icon: Users },
-      { href: "/automation", label: "Automation Center", icon: Bot },
     ],
   },
   {
@@ -62,6 +59,9 @@ const navSections = [
       { href: "/it-maintenance/licenses", label: "Licenses & Renewals", icon: KeyRound },
       { href: "/it-maintenance/licenses/new", label: "Add License", icon: KeyRound },
       { href: "/it-maintenance/licenses/renewals", label: "Renewal Risks", icon: TriangleAlert },
+      { href: "/calendar", label: "IT Operations Calendar", icon: Calendar },
+      { href: "/resources", label: "Resource Allocation", icon: Users },
+      { href: "/automation", label: "Automation Center", icon: Bot },
     ],
   },
   {
