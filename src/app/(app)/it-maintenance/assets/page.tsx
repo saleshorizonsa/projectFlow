@@ -1,4 +1,4 @@
-import { ITAssetForm } from "@/components/it-maintenance/it-forms";
+import { ITAssetForm, ITLicenseForm } from "@/components/it-maintenance/it-forms";
 import { AssetRegisterTable } from "@/components/it-maintenance/it-maintenance-tables";
 import { AssetLifecycleTab } from "@/components/it-maintenance/asset-lifecycle-tab";
 import { AssetSecurityTab } from "@/components/it-maintenance/asset-security-tab";
@@ -89,6 +89,7 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
         <TabsList>
           <TabsTrigger value="register">Asset Register</TabsTrigger>
           {canManage && <TabsTrigger value="add">Add Asset</TabsTrigger>}
+          {canManage && <TabsTrigger value="add-license">Add License</TabsTrigger>}
           <TabsTrigger value="lifecycle">Lifecycle & Warranty</TabsTrigger>
           <TabsTrigger value="security">Security Profile</TabsTrigger>
           <TabsTrigger value="recommendations" className="relative">
@@ -114,6 +115,12 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
         {canManage && (
           <TabsContent value="add">
             <ITAssetForm companies={companyOptions} users={userOptions} employees={employeeOptions} />
+          </TabsContent>
+        )}
+
+        {canManage && (
+          <TabsContent value="add-license">
+            <ITLicenseForm assets={assets.map((a) => ({ id: a.id, name: a.name, assetTag: a.assetTag }))} />
           </TabsContent>
         )}
 
