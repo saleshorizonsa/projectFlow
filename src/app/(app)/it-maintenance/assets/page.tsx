@@ -1,4 +1,5 @@
-import { ITAssetForm, ITLicenseForm } from "@/components/it-maintenance/it-forms";
+import { ITAssetForm } from "@/components/it-maintenance/it-forms";
+import { LicensePoolTable } from "@/components/it-maintenance/license-pool-table";
 import { AssetRegisterTable } from "@/components/it-maintenance/it-maintenance-tables";
 import { AssetLifecycleTab } from "@/components/it-maintenance/asset-lifecycle-tab";
 import { AssetSecurityTab } from "@/components/it-maintenance/asset-security-tab";
@@ -18,7 +19,7 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
   const companyId = await selectedCompanyId(searchParams);
   const canManage = session?.user.role !== "VIEWER";
 
-  const [assets, users, companies, employees] = await Promise.all([
+  const [assets, users, companies, employees, licenses] = await Promise.all([
     prisma.iTAsset.findMany({
       where: assetCompanyWhere(companyId),
       include: {
@@ -41,6 +42,16 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
     prisma.user.findMany({ where: userCompanyWhere(companyId), orderBy: { name: "asc" } }),
     prisma.company.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.employee.findMany({ where: companyId ? { companies: { some: { companyId } } } : {}, orderBy: { name: "asc" } }),
+    prisma.iTLicense.findMany({
+      where: companyId ? { OR: [{ asset: assetCompanyWhere(companyId) }, { assetId: null }] } : {},
+      include: {
+        assignments: {
+          include: { employee: { select: { id: true, employeeId: true, name: true, department: true } } },
+          orderBy: { assignedAt: "asc" },
+        },
+      },
+      orderBy: { expiryDate: "asc" },
+    }),
   ]);
 
   const companyOptions = companies.map((c) => ({ id: c.id, name: c.name, code: c.code }));
@@ -69,6 +80,26 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
   const criticalCount = recommendations.filter((r) => r.recommendations.some((rec) => rec.severity === "critical")).length;
   const highCount = recommendations.filter((r) => r.recommendations.some((rec) => rec.severity === "high")).length;
 
+  const poolLicenses = licenses.map((l) => ({
+    id: l.id,
+    licenseId: l.licenseId,
+    name: l.name,
+    vendor: l.vendor,
+    seats: l.seats,
+    cost: Number(l.cost ?? 0),
+    expiryDate: l.expiryDate.toISOString(),
+    owner: l.owner ?? "",
+    assetId: l.assetId ?? null,
+    notes: l.notes ?? null,
+    assignments: l.assignments.map((a) => ({
+      id: a.id,
+      employeeId: a.employeeId,
+      assignedAt: a.assignedAt.toISOString(),
+      notes: a.notes ?? null,
+      employee: { id: a.employee.id, employeeId: a.employee.employeeId, name: a.employee.name, department: a.employee.department ?? null },
+    })),
+  }));
+
   return (
     <div className="space-y-5">
       <Card>
@@ -89,7 +120,7 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
         <TabsList>
           <TabsTrigger value="register">Asset Register</TabsTrigger>
           {canManage && <TabsTrigger value="add">Add Asset</TabsTrigger>}
-          {canManage && <TabsTrigger value="add-license">Add License</TabsTrigger>}
+          <TabsTrigger value="licenses">Licenses</TabsTrigger>
           <TabsTrigger value="lifecycle">Lifecycle & Warranty</TabsTrigger>
           <TabsTrigger value="security">Security Profile</TabsTrigger>
           <TabsTrigger value="recommendations" className="relative">
@@ -118,11 +149,14 @@ export default async function ITAssetsPage({ searchParams }: { searchParams?: Pr
           </TabsContent>
         )}
 
-        {canManage && (
-          <TabsContent value="add-license">
-            <ITLicenseForm assets={assets.map((a) => ({ id: a.id, name: a.name, assetTag: a.assetTag }))} />
-          </TabsContent>
-        )}
+        <TabsContent value="licenses">
+          <LicensePoolTable
+            licenses={poolLicenses}
+            canManage={session?.user.role === "ADMIN"}
+            employees={employees.map((e) => ({ id: e.id, name: e.name, employeeId: e.employeeId }))}
+            assets={assets.map((a) => ({ id: a.id, name: a.name, assetTag: a.assetTag }))}
+          />
+        </TabsContent>
 
         <TabsContent value="lifecycle">
           <AssetLifecycleTab assets={assetsWithRecs} />
