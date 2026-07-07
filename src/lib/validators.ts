@@ -76,6 +76,7 @@ const taskBaseSchema = z.object({
   estimatedHours: z.coerce.number().positive(),
   actualHours: z.coerce.number().nonnegative().default(0),
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"]),
+  completionNote: z.string().optional().nullable(),
   parentTaskId: z.string().optional().nullable(),
 });
 

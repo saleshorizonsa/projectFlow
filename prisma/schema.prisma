@@ -658,6 +658,7 @@ model Task {
   estimatedHours      Decimal              @db.Decimal(8, 2)
   actualHours         Decimal              @default(0) @db.Decimal(8, 2)
   status              TaskStatus           @default(NOT_STARTED)
+  completionNote      String?
   parentTaskId        String?
   parent              Task?                @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subtasks            Task[]               @relation("TaskSubtasks")

@@ -32,6 +32,7 @@ export type EditableTask = {
   actualHours: number;
   assigneeId: string;
   parentTaskId: string | null;
+  completionNote: string | null;
 };
 
 type Subtask = { id: string; title: string; status: string; assignee: { name: string }; dueDate: string };

@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { formatEnum, trafficLight } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Clock, GitBranch, Search, Trash2, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock, GitBranch, Search, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { TaskEditDialog, type EditableTask } from "@/components/tasks/task-edit-dialog";
 
@@ -140,7 +143,7 @@ export function TaskBoard({
         </div>
       </div>
 
-      <Tabs defaultValue="kanban" className="space-y-4">
+      <Tabs defaultValue="list" className="space-y-4">
         <TabsList>
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
           <TabsTrigger value="list">List</TabsTrigger>
@@ -255,6 +258,94 @@ function LogHoursButton({ taskId, actual, estimated, onLogged }: { taskId: strin
 }
 
 // ─────────────────────────────────────────────
+// Complete Task button (with reason dialog)
+// ─────────────────────────────────────────────
+const COMPLETION_REASONS = ["Done", "Deployed", "Handed Over", "Cancelled", "Other"] as const;
+
+function CompleteTaskButton({ task, onCompleted, compact = false }: {
+  task: Task; onCompleted: () => void; compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<string>("Done");
+  const [note, setNote] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  if (task.status === "COMPLETED") return null;
+
+  function confirm() {
+    startTransition(async () => {
+      const completionNote = note.trim() ? `${reason}: ${note.trim()}` : reason;
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED", completionNote }),
+      });
+      setOpen(false);
+      setNote("");
+      onCompleted();
+    });
+  }
+
+  return (
+    <>
+      {compact ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+          title="Mark complete"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 border-emerald-300 px-2 text-xs text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+          onClick={() => setOpen(true)}
+        >
+          <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Complete
+        </Button>
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Mark as Complete</DialogTitle>
+            <DialogDescription className="truncate">{task.title}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Completion reason</Label>
+              <Select value={reason} onValueChange={setReason}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COMPLETION_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                Note <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                placeholder="e.g. Deployed to production, reviewed and approved…"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                className="resize-none text-sm"
+              />
+            </div>
+            <Button className="w-full" onClick={confirm} disabled={pending}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              {pending ? "Saving…" : "Mark Complete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Kanban card
 // ─────────────────────────────────────────────
 function KanbanCard({ task, canManage, onDelete, currentUserId, currentUserRole, onLogged }: {
@@ -290,11 +381,12 @@ function KanbanCard({ task, canManage, onDelete, currentUserId, currentUserRole,
           <span>{task.subtaskCount} subtask{task.subtaskCount > 1 ? "s" : ""}</span>
         </div>
       )}
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex items-center justify-between gap-1">
         <Badge variant={PRIORITY_COLORS[task.priority] as "destructive" | "warning" | "secondary" | "outline"}>{task.priority}</Badge>
         <div className="flex items-center gap-1">
           {isOverdue && <Badge variant="destructive" className="text-[9px] px-1">Overdue</Badge>}
           <span className="text-xs text-muted-foreground">{task.assignee.name}</span>
+          <CompleteTaskButton task={task} onCompleted={onLogged} compact />
         </div>
       </div>
     </div>
@@ -328,6 +420,12 @@ function TaskLine({ task, canManage, onDelete, currentUserId, currentUserRole, o
             : "General operations"} · due {new Date(task.dueDate).toLocaleDateString("en-GB")}
           {isOverdue && <span className="ml-1 text-destructive font-semibold">overdue</span>}
         </div>
+        {task.status === "COMPLETED" && task.completionNote && (
+          <div className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
+            <span className="truncate">{task.completionNote}</span>
+          </div>
+        )}
         {task.project?.companies && task.project.companies.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {task.project.companies.map((c) => <Badge key={c.id} variant="outline" className="text-[10px]">{c.code}</Badge>)}
@@ -337,6 +435,7 @@ function TaskLine({ task, canManage, onDelete, currentUserId, currentUserRole, o
       <div className="flex shrink-0 items-center gap-2">
         <LogHoursButton taskId={task.id} actual={task.actualHours} estimated={task.estimatedHours} onLogged={onLogged} />
         <Badge variant={light === "red" ? "destructive" : light === "yellow" ? "warning" : "success"}>{formatEnum(task.status)}</Badge>
+        <CompleteTaskButton task={task} onCompleted={onLogged} />
         <TaskEditDialog task={task} compact currentUserId={currentUserId} currentUserRole={currentUserRole} />
         {canManage && (
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDelete(task)}>
@@ -430,8 +529,9 @@ function CalendarView({ tasks, month, onMonthChange, currentUserId, currentUserR
                     </div>
                     <div className="space-y-0.5">
                       {dayTasks.slice(0, 3).map((t) => (
-                        <div key={t.id} className="group relative">
+                        <div key={t.id} className="group relative flex items-center gap-0.5">
                           <TaskEditDialog task={t} currentUserId={currentUserId} currentUserRole={currentUserRole} calendarMode />
+                          <CompleteTaskButton task={t} onCompleted={onLogged} compact />
                         </div>
                       ))}
                       {dayTasks.length > 3 && (

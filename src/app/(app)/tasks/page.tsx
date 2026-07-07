@@ -40,6 +40,7 @@ export default async function TasksPage({ searchParams }: { searchParams?: Promi
     taskType: task.taskType,
     assigneeId: task.assigneeId,
     parentTaskId: task.parentTaskId ?? null,
+    completionNote: task.completionNote ?? null,
     subtaskCount: task._count.subtasks,
     project: task.project ? {
       name: task.project.name,
