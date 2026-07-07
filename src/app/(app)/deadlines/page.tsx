@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { format } from "date-fns";
 import { AlertTriangle, CalendarClock, CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -49,11 +50,13 @@ export default async function DeadlinesPage({ searchParams }: { searchParams?: P
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monitor.items.map((item) => (
+                {monitor.items.map((item) => {
+                  const itemHref: Record<string, string> = { Task: "/tasks", Gap: "/gaps", "Gap Action": "/gaps", Milestone: "/milestones", Project: "/projects" };
+                  return (
                   <TableRow key={`${item.type}-${item.id}`}>
                     <TableCell>
                       <div className="min-w-48">
-                        <div className="font-medium">{item.title}</div>
+                        <Link href={itemHref[item.type] ?? "/deadlines"} className="font-medium hover:underline">{item.title}</Link>
                         <div className="text-xs text-muted-foreground">{item.type}</div>
                       </div>
                     </TableCell>
@@ -67,7 +70,8 @@ export default async function DeadlinesPage({ searchParams }: { searchParams?: P
                       <Badge variant={healthVariant[item.health]}>{formatEnum(item.status)}</Badge>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {monitor.items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">No overdue or upcoming deadlines.</TableCell>
@@ -85,10 +89,10 @@ export default async function DeadlinesPage({ searchParams }: { searchParams?: P
               <div key={project.projectId} className="rounded-md border p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{project.projectName}</div>
+                    <Link href={`/projects/${project.projectId}`} className="truncate text-sm font-medium hover:underline">{project.projectName}</Link>
                     <div className="truncate text-xs text-muted-foreground">{project.projectCode} / {project.managerName}</div>
                   </div>
-                  <Badge className="shrink-0" variant={healthVariant[project.health]}>{project.health.toUpperCase()}</Badge>
+                  <Badge className="shrink-0" variant={healthVariant[project.health]}>{project.health === "red" ? "At Risk" : project.health === "yellow" ? "Under Review" : "On Track"}</Badge>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1 text-xs text-muted-foreground">
                   {project.reasons.map((reason) => (
@@ -114,7 +118,7 @@ function Metric({ title, value, icon: Icon, variant }: { title: string; value: n
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-3">
         <div className="text-3xl font-semibold leading-none">{value}</div>
-        <Badge variant={variant}>{variant === "destructive" ? "RED" : variant === "warning" ? "YELLOW" : "GREEN"}</Badge>
+        <Badge variant={variant}>{variant === "destructive" ? "At Risk" : variant === "warning" ? "Under Review" : "On Track"}</Badge>
       </CardContent>
     </Card>
   );

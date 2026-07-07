@@ -146,16 +146,9 @@ export default function MilestonesPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/projects");
-      const data: { id: string; name: string; status: string }[] = await res.json();
-      const withMilestones = await Promise.all(
-        data.map(async p => {
-          const mr = await fetch(`/api/projects/${p.id}/milestones`);
-          const milestones: Milestone[] = await mr.json();
-          return { ...p, milestones };
-        })
-      );
-      setProjects(withMilestones);
+      const res = await fetch("/api/milestones");
+      const data: Project[] = await res.json();
+      setProjects(data);
     } finally {
       setLoading(false);
     }

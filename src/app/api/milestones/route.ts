@@ -3,6 +3,30 @@ import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { milestoneSchema } from "@/lib/validators";
 
+export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const companyId = searchParams.get("company") ?? undefined;
+
+  const projects = await getPrisma().project.findMany({
+    where: companyId ? { companies: { some: { companyId } } } : {},
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      milestones: {
+        orderBy: { dueDate: "asc" },
+        select: { id: true, name: true, description: true, dueDate: true, completion: true, status: true, projectId: true },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return NextResponse.json(projects);
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -47,10 +47,15 @@ export default async function SupportPage({ searchParams }: { searchParams?: Pro
       </section>
 
       <Card>
-        <CardHeader><CardTitle>Recent Support Load</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle>Recent Support Load</CardTitle>
+          <Button asChild variant="ghost" size="sm" className="text-xs">
+            <Link href="/support/tickets">View all →</Link>
+          </Button>
+        </CardHeader>
         <CardContent className="grid gap-2">
           {tickets.map((ticket) => (
-            <div key={ticket.id} className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <Link key={ticket.id} href="/support/tickets" className="flex flex-col gap-2 rounded-md border p-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="truncate font-medium">{ticket.ticketNo} / {ticket.title}</div>
                 <div className="truncate text-xs text-muted-foreground">{ticket.company.code} / {ticket.createdAt.toLocaleString()}</div>
@@ -59,7 +64,7 @@ export default async function SupportPage({ searchParams }: { searchParams?: Pro
                 <Badge variant={ticket.priority === "CRITICAL" ? "destructive" : ticket.priority === "HIGH" ? "warning" : "secondary"}>{ticket.priority}</Badge>
                 <Badge variant="outline">{ticket.status}</Badge>
               </div>
-            </div>
+            </Link>
           ))}
           {tickets.length === 0 && <p className="text-sm text-muted-foreground">No support tickets found.</p>}
         </CardContent>

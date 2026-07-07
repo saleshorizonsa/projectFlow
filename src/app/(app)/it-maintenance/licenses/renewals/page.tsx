@@ -54,8 +54,13 @@ export default async function LicenseRenewalRisksPage({ searchParams }: { search
                         <div className="text-xs text-muted-foreground">{license._count.assignments} seat(s) assigned</div>
                       )}
                     </TableCell>
-                    <TableCell>{license.expiryDate.toLocaleDateString()}</TableCell>
-                    <TableCell><Badge variant={days < 0 || days <= 30 ? "destructive" : "warning"}>{days < 0 ? `${Math.abs(days)} days expired` : `${days} days left`}</Badge></TableCell>
+                    <TableCell>{license.expiryDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={days < 0 || days <= 30 ? "destructive" : "warning"}>{days < 0 ? `${Math.abs(days)} days expired` : `${days} days left`}</Badge>
+                        <Link href="/it-maintenance/licenses" className="text-xs text-muted-foreground underline-offset-2 hover:underline">Edit</Link>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}

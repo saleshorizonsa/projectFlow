@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AlertTriangle, BellRing, ShieldAlert, TimerReset } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +13,17 @@ const levelVariant: Record<EscalationLevel, "destructive" | "warning" | "seconda
   LEVEL_1: "secondary",
 };
 
+const MODULE_HREF: Record<string, string> = {
+  Gap: "/gaps",
+  Task: "/tasks",
+  Milestone: "/milestones",
+  Project: "/projects",
+};
+
 export default async function EscalationsPage({ searchParams }: { searchParams?: Promise<CompanySearchParams> }) {
   const prisma = getPrisma();
   const companyId = await selectedCompanyId(searchParams);
-  await syncEscalationNotifications(prisma);
+  void syncEscalationNotifications(prisma);
   const matrix = await getEscalationMatrix(prisma, new Date(), companyId);
 
   return (
@@ -55,7 +63,7 @@ export default async function EscalationsPage({ searchParams }: { searchParams?:
                   <TableRow key={`${item.module}-${item.id}-${item.ruleId}`}>
                     <TableCell>
                       <div className="min-w-48">
-                        <div className="font-medium">{item.title}</div>
+                        <Link href={MODULE_HREF[item.module] ?? "/escalations"} className="font-medium hover:underline">{item.title}</Link>
                         <div className="text-xs text-muted-foreground">{item.module}</div>
                       </div>
                     </TableCell>
