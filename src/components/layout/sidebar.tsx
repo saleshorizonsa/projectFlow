@@ -13,7 +13,7 @@ const navSections = [
   {
     label: "Overview",
     items: [
-      { href: "/dashboard", label: "Command Center", icon: Gauge },
+      { href: "/dashboard", label: "Overview", icon: Gauge },
     ],
   },
   {
@@ -205,7 +205,7 @@ export function Sidebar() {
                   key={item.href}
                   href={companyQuery ? `${item.href}?company=${companyQuery}` : item.href}
                   className={cn(
-                    "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+                    "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground",
                     active && "bg-primary/10 text-primary",
                     collapsed && "justify-center px-0",
                   )}
