@@ -11,16 +11,16 @@ import { useSidebarStore } from "@/components/layout/sidebar-store";
 
 const navSections = [
   {
-    label: "Control",
+    label: "Overview",
     items: [
       { href: "/dashboard", label: "Command Center", icon: Gauge },
       { href: "/calendar", label: "IT Operations Calendar", icon: Calendar },
-      { href: "/automation", label: "Automation Center", icon: Bot },
       { href: "/resources", label: "Resource Allocation", icon: Users },
+      { href: "/automation", label: "Automation Center", icon: Bot },
     ],
   },
   {
-    label: "Setup",
+    label: "Organisation Setup",
     items: [
       { href: "/companies", label: "Companies", icon: Building2 },
       { href: "/companies/new", label: "Add Company", icon: Building2 },
@@ -30,9 +30,9 @@ const navSections = [
     ],
   },
   {
-    label: "Projects & Current State",
+    label: "Projects & Planning",
     items: [
-      { href: "/projects", label: "Projects & Current State", icon: FolderKanban },
+      { href: "/projects", label: "Projects", icon: FolderKanban },
       { href: "/projects/new", label: "Create Project", icon: FolderKanban },
       { href: "/workflow", label: "Process Workflow", icon: GitBranch },
       { href: "/milestones", label: "Milestones", icon: Flag },
@@ -46,7 +46,7 @@ const navSections = [
     ],
   },
   {
-    label: "Gap To Execution",
+    label: "Gap & Execution",
     items: [
       { href: "/gaps", label: "Gap Analysis", icon: TriangleAlert },
       { href: "/deadlines", label: "Execution Deadlines", icon: CalendarClock },
@@ -54,19 +54,9 @@ const navSections = [
     ],
   },
   {
-    label: "Results",
+    label: "IT Operations",
     items: [
-      { href: "/reports", label: "Reports & Analytics", icon: BarChart2 },
-      { href: "/notifications", label: "Feedback Alerts", icon: Bell },
-    ],
-  },
-  {
-    label: "Shared Services",
-    items: [
-      { href: "/support", label: "IT Support Overview", icon: LifeBuoy },
-      { href: "/support/new", label: "Log Support Ticket", icon: LifeBuoy },
-      { href: "/support/tickets", label: "Ticket Register", icon: LifeBuoy },
-      { href: "/it-maintenance", label: "IT Maintenance Overview", icon: HardDrive },
+      { href: "/it-maintenance", label: "IT Overview", icon: HardDrive },
       { href: "/it-maintenance/assets", label: "Assets & Apps", icon: HardDrive },
       { href: "/it-maintenance/maintenance", label: "Maintenance Windows", icon: CalendarClock },
       { href: "/it-maintenance/licenses", label: "Licenses & Renewals", icon: KeyRound },
@@ -75,16 +65,31 @@ const navSections = [
     ],
   },
   {
+    label: "IT Support",
+    items: [
+      { href: "/support", label: "Support Overview", icon: LifeBuoy },
+      { href: "/support/new", label: "Log Support Ticket", icon: LifeBuoy },
+      { href: "/support/tickets", label: "Ticket Register", icon: LifeBuoy },
+    ],
+  },
+  {
     label: "Cybersecurity & Compliance",
     items: [
       { href: "/compliance", label: "Compliance Dashboard", icon: CheckSquare },
       { href: "/risk-register", label: "Risk Register", icon: AlertTriangle },
-      { href: "/audit", label: "Audit Log & Evidence", icon: ScrollText },
       { href: "/vulnerability-management", label: "Vulnerability Management", icon: Bug },
       { href: "/backup-monitoring", label: "Backup Monitoring", icon: DatabaseBackup },
       { href: "/policy-management", label: "Policy Management", icon: FileText },
       { href: "/incident-response", label: "Incident Response", icon: Siren },
       { href: "/playbooks", label: "IR Playbooks", icon: BookOpen },
+      { href: "/audit", label: "Audit Log & Evidence", icon: ScrollText },
+    ],
+  },
+  {
+    label: "Reports & Insights",
+    items: [
+      { href: "/reports", label: "Reports & Analytics", icon: BarChart2 },
+      { href: "/notifications", label: "Feedback & Alerts", icon: Bell },
     ],
   },
   {
@@ -119,7 +124,7 @@ export function Sidebar() {
   const companyQuery = searchParams.get("company");
   const [query, setQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    Control: true,
+    Overview: true,
     "Task Management": true,
   });
   const [badges, setBadges] = useState<BadgeCounts>({});
