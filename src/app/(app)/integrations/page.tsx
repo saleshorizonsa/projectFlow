@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -380,7 +380,7 @@ export default function IntegrationsPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="gap-2 border-t pt-4">
+              <div className="flex gap-2 border-t px-6 py-4">
                 <Button
                   size="sm"
                   onClick={() => handleSync(integration.id)}
@@ -407,7 +407,7 @@ export default function IntegrationsPage() {
                     : <Trash2 className="h-3 w-3" />
                   }
                 </Button>
-              </CardFooter>
+              </div>
             </Card>
           ))}
         </div>
