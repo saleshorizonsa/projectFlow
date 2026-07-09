@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart2, BarChart3, Bell, BellRing, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, Flag, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
+import { Activity, BarChart2, BarChart3, Bell, BellRing, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, Flag, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Plug, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,12 @@ const navSections = [
     items: [
       { href: "/reports", label: "Reports & Analytics", icon: BarChart2 },
       { href: "/notifications", label: "Feedback & Alerts", icon: Bell },
+    ],
+  },
+  {
+    label: "Integrations",
+    items: [
+      { href: "/integrations", label: "Connected Integrations", icon: Plug },
     ],
   },
   {

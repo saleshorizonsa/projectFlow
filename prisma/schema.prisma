@@ -1453,3 +1453,25 @@ model AlertRule {
   companyId          String?
   company            Company?              @relation(fields: [companyId], references: [id])
 }
+
+// ── External Integrations (SIEM connectors) ──────────────────────────────────
+
+model Integration {
+  id             String    @id @default(cuid())
+  type           String    // "O365" | "SOPHOS_CENTRAL" | "AWS_CLOUDTRAIL" | "GOOGLE_WORKSPACE"
+  name           String
+  enabled        Boolean   @default(true)
+  tenantId       String?   // Azure tenant ID (O365)
+  clientId       String?   // Azure app client ID (O365)
+  clientSecret   String?   // AES-256-GCM encrypted via encryptField()
+  config         Json?     // { contentTypes: string[] } for O365
+  lastSyncAt     DateTime?
+  lastSyncStatus String?   // "SUCCESS" | "ERROR" | "RUNNING"
+  lastSyncError  String?
+  eventCount     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([type])
+  @@index([enabled])
+}
