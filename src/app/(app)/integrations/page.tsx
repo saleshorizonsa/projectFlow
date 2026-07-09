@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, CheckCircle2, Clock, Cloud, Loader2, Plug, RefreshCw, Settings, Shield, Trash2, Wifi, WifiOff } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -343,11 +341,14 @@ export default function IntegrationsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <SyncStatusBadge status={integration.lastSyncStatus} />
-                    <Switch
-                      checked={integration.enabled}
-                      onCheckedChange={() => handleToggle(integration)}
-                      aria-label="Enable integration"
-                    />
+                    <Button
+                      size="sm"
+                      variant={integration.enabled ? "default" : "outline"}
+                      onClick={() => handleToggle(integration)}
+                      className="text-xs h-7 px-2"
+                    >
+                      {integration.enabled ? "Enabled" : "Disabled"}
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
