@@ -34,10 +34,8 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
       <div style={{ background: `linear-gradient(135deg, #0d1a2e 0%, ${NAVY} 100%)` }} className="px-4 py-5">
         <div className="mx-auto max-w-2xl flex items-center justify-between">
           <div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/Logo with Tagline.jpg" alt="HorizonMiyaar" className="h-9 w-auto object-contain mb-1"
-                 style={{ filter: "brightness(1.15)" }} />
-            <p className="text-xs" style={{ color: "rgba(200,160,80,0.7)" }}>Employee Handover Record — No login required</p>
+            <div className="text-base font-bold text-white mb-0.5">JASCOMiyaar</div>
+            <p className="text-xs" style={{ color: "rgba(148,163,184,0.7)" }}>Employee Handover Record — No login required</p>
           </div>
           <div className="text-right">
             <div className="text-sm font-bold text-white">{employee.name}</div>
@@ -162,7 +160,7 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
 
         {/* ── Footer ── */}
         <p className="text-center text-xs text-gray-400 pt-2">
-          © {now.getFullYear()} Horizon Business Solutions Est. · HorizonMiyaar
+          © {now.getFullYear()} Horizon Business Solutions Est. · JASCOMiyaar
         </p>
       </div>
     </div>

@@ -207,7 +207,7 @@ async function buildPdf(employee: EmployeeForPdf, photoBuffer: Buffer | null): P
     // Footer
     const pageHeight = doc.page.height;
     doc.fillColor(AMBER).fontSize(7).font("Helvetica")
-      .text("HorizonMiyaar · By Horizon Business Solutions Est. · Confidential", 50, pageHeight - 40, { align: "center", width: W });
+      .text("JASCOMiyaar · By Horizon Business Solutions Est. · Confidential", 50, pageHeight - 40, { align: "center", width: W });
 
     doc.end();
   });

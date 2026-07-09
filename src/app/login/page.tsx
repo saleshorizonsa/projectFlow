@@ -11,18 +11,10 @@ export default function LoginPage() {
       {/* ── RIGHT PANEL ────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col items-center justify-center bg-background p-6 lg:p-16">
 
-        {/* Mobile logo (hidden on desktop) */}
-        <div className="mb-8 flex flex-col items-center gap-2 lg:hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Logo with Tagline.jpg"
-            alt="Horizon Business Solutions"
-            className="h-10 w-auto object-contain"
-          />
-          <div className="text-center">
-            <div className="text-lg font-bold">HorizonMiyaar</div>
-            <div className="text-xs text-muted-foreground">By Horizon Business Solutions Est.</div>
-          </div>
+        {/* Mobile brand (hidden on desktop) */}
+        <div className="mb-8 text-center lg:hidden">
+          <div className="text-xl font-bold">JASCOMiyaar</div>
+          <div className="text-xs text-muted-foreground">By Horizon Business Solutions Est.</div>
         </div>
 
         <div className="w-full max-w-sm space-y-7">
@@ -31,7 +23,7 @@ export default function LoginPage() {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sign in to your HorizonMiyaar workspace
+              Sign in to your JASCOMiyaar workspace
             </p>
           </div>
 

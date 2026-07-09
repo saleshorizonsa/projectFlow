@@ -54,7 +54,7 @@ export default async function AutomationPage() {
         <Card>
           <CardHeader>
             <CardTitle>Automation Rules</CardTitle>
-            <CardDescription>Rules currently active in HorizonMiyaar.</CardDescription>
+            <CardDescription>Rules currently active in JASCOMiyaar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {results.map((result) => (

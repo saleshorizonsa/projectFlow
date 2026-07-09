@@ -154,7 +154,7 @@ export function Sidebar() {
       <div className="flex h-16 shrink-0 items-center justify-between px-4">
         {!collapsed && (
           <div>
-            <div className="text-sm font-semibold">HorizonMiyaar</div>
+            <div className="text-sm font-semibold">JASCOMiyaar</div>
             <div className="text-xs text-muted-foreground">Execution control</div>
           </div>
         )}

@@ -104,20 +104,9 @@ export function LoginSlider() {
 
       {/* ── Logo ── */}
       <div className="relative z-10 p-10">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Logo with Tagline.jpg"
-            alt="Horizon Business Solutions"
-            className="h-12 w-auto object-contain"
-            style={{ filter: "brightness(1.1) drop-shadow(0 0 8px rgba(200,122,28,0.28))" }}
-          />
-          <div>
-            <div className="text-lg font-bold tracking-tight text-white">HorizonMiyaar</div>
-            <div className="text-xs" style={{ color: "rgba(200,160,80,0.60)" }}>
-              By Horizon Business Solutions Est.
-            </div>
-          </div>
+        <div className="text-xl font-bold tracking-tight text-white">JASCOMiyaar</div>
+        <div className="text-xs mt-0.5" style={{ color: "rgba(148,163,184,0.55)" }}>
+          By Horizon Business Solutions Est.
         </div>
       </div>
 
