@@ -56,6 +56,8 @@ export async function POST(request: Request) {
     assignedToId,
     companyId,
     sourceTicketId,
+    mitreTactic,
+    mitreTechnique,
   } = body;
 
   const incident = await getPrisma().incident.create({
@@ -71,6 +73,8 @@ export async function POST(request: Request) {
       ...(assignedToId !== undefined ? { assignedToId } : {}),
       ...(companyId !== undefined ? { companyId } : {}),
       ...(sourceTicketId !== undefined ? { sourceTicketId } : {}),
+      ...(mitreTactic !== undefined ? { mitreTactic } : {}),
+      ...(mitreTechnique !== undefined ? { mitreTechnique } : {}),
       createdBy: session.user.id,
     },
   });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart2, BarChart3, Bell, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, Flag, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
+import { Activity, BarChart2, BarChart3, Bell, BellRing, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, Flag, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,8 @@ const navSections = [
       { href: "/vulnerability-management", label: "Vulnerability Management", icon: Bug },
       { href: "/backup-monitoring", label: "Backup Monitoring", icon: DatabaseBackup },
       { href: "/policy-management", label: "Policy Management", icon: FileText },
+      { href: "/security-events", label: "Security Events", icon: Activity },
+      { href: "/alert-rules", label: "Alert Rules", icon: BellRing },
       { href: "/incident-response", label: "Incident Response", icon: Siren },
       { href: "/playbooks", label: "IR Playbooks", icon: BookOpen },
       { href: "/audit", label: "Audit Log & Evidence", icon: ScrollText },
@@ -107,6 +109,7 @@ type BadgeCounts = {
   highRisks?: number;
   overdueTasks?: number;
   unreadNotifications?: number;
+  securityAlerts?: number;
 };
 
 const BADGE_MAP: Record<string, keyof BadgeCounts> = {
@@ -115,6 +118,7 @@ const BADGE_MAP: Record<string, keyof BadgeCounts> = {
   "/risk-register": "highRisks",
   "/tasks": "overdueTasks",
   "/notifications": "unreadNotifications",
+  "/security-events": "securityAlerts",
 };
 
 export function Sidebar() {

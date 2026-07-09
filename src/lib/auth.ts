@@ -7,6 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 import { verifyTotp, verifyAndConsumeBackupCode } from "@/lib/totp";
 import { authConfig } from "@/lib/auth.config";
+import { logSecurityEvent } from "@/lib/security-events";
 
 const LOCK_AFTER_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -43,6 +44,7 @@ const fullAuthConfig = {
         // Account lockout check
         if (user?.lockedUntil && user.lockedUntil > new Date()) {
           await audit({ userId: user.id, action: "LOGIN_BLOCKED", ip, detail: { email } });
+          void logSecurityEvent({ type: "LOGIN_LOCKOUT", actor: email, actorIp: ip, description: `Account locked — ${email}`, mitreTactic: "Credential Access" });
           return null;
         }
 
@@ -66,6 +68,12 @@ const fullAuthConfig = {
               action: shouldLock ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
               ip,
               detail: { email, attempt: attempts },
+            });
+            void logSecurityEvent({
+              type: shouldLock ? "LOGIN_LOCKOUT" : "LOGIN_FAILURE",
+              actor: email, actorIp: ip,
+              description: shouldLock ? `Account locked after ${attempts} failed attempts — ${email}` : `Failed login attempt ${attempts} — ${email}`,
+              mitreTactic: "Credential Access",
             });
           }
           return null;
@@ -115,6 +123,7 @@ const fullAuthConfig = {
         });
 
         await audit({ userId: user.id, action: "LOGIN_SUCCESS", ip, detail: { email, method: user.mfaEnabled ? "totp" : "password" } });
+        void logSecurityEvent({ type: "LOGIN_SUCCESS", actor: email, actorIp: ip, description: `Successful login — ${email}` });
 
         return {
           id: user.id,

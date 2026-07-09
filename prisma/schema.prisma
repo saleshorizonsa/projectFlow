@@ -536,6 +536,8 @@ model Company {
   vulnerabilities Vulnerability[]
   backupJobs      BackupJob[]
   policies        Policy[]
+  securityEvents  SecurityEvent[]
+  alertRules      AlertRule[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   createdBy       String?
@@ -1272,6 +1274,8 @@ model Incident {
   eradicatedAt    DateTime?
   recoveredAt     DateTime?
   closedAt        DateTime?
+  mitreTactic     String?
+  mitreTechnique  String?
   assignedToId    String?
   assignedTo      User?                   @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   companyId       String?
@@ -1366,4 +1370,86 @@ model IncidentRisk {
   risk       Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
 
   @@unique([incidentId, riskId])
+}
+
+// ── SIEM: Security Events & Alert Rules ─────────────────────────────────────
+
+enum SecurityEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGIN_LOCKOUT
+  MFA_ENABLED
+  MFA_DISABLED
+  PASSWORD_CHANGED
+  USER_CREATED
+  USER_DELETED
+  ROLE_CHANGED
+  ASSET_CREATED
+  ASSET_MODIFIED
+  ASSET_DELETED
+  EMPLOYEE_CREATED
+  EMPLOYEE_MODIFIED
+  EMPLOYEE_EXITED
+  VULNERABILITY_OPENED
+  VULNERABILITY_ESCALATED
+  INCIDENT_CREATED
+  INCIDENT_ESCALATED
+  CONFIG_CHANGED
+  POLICY_CHANGED
+  SUSPICIOUS_ACTIVITY
+}
+
+enum SecurityEventSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertRuleAction {
+  CREATE_INCIDENT
+  LOG_ONLY
+}
+
+model SecurityEvent {
+  id          String                @id @default(cuid())
+  createdAt   DateTime              @default(now())
+  type        SecurityEventType
+  severity    SecurityEventSeverity
+  actor       String?
+  actorIp     String?
+  resource    String?
+  resourceId  String?
+  description String
+  metadata    Json?
+  mitreTactic String?
+  companyId   String?
+  company     Company?              @relation(fields: [companyId], references: [id])
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([severity])
+  @@index([companyId])
+}
+
+model AlertRule {
+  id                 String                @id @default(cuid())
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  name               String
+  description        String?
+  enabled            Boolean               @default(true)
+  eventType          SecurityEventType
+  conditionCount     Int                   @default(1)
+  conditionWindowMin Int                   @default(60)
+  severity           SecurityEventSeverity @default(HIGH)
+  action             AlertRuleAction       @default(CREATE_INCIDENT)
+  incidentTitle      String?
+  incidentSeverity   IncidentSeverity?
+  mitreTactic        String?
+  mitreTechnique     String?
+  lastFiredAt        DateTime?
+  companyId          String?
+  company            Company?              @relation(fields: [companyId], references: [id])
 }

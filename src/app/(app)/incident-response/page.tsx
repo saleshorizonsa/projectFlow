@@ -84,7 +84,7 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [form, setForm] = useState({
     incidentId: "", title: "", description: "", type: "OTHER", severity: "HIGH",
-    affectedSystems: "", impact: "",
+    affectedSystems: "", impact: "", mitreTactic: "", mitreTechnique: "",
   });
   const set = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setIsDirty(true); };
 
@@ -111,7 +111,7 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
       }
       setOpen(false);
       setIsDirty(false);
-      setForm({ incidentId: "", title: "", description: "", type: "OTHER", severity: "HIGH", affectedSystems: "", impact: "" });
+      setForm({ incidentId: "", title: "", description: "", type: "OTHER", severity: "HIGH", affectedSystems: "", impact: "", mitreTactic: "", mitreTechnique: "" });
       toast.success("Incident reported");
       onCreated();
     });
@@ -144,6 +144,24 @@ function AddIncidentDialog({ onCreated }: { onCreated: () => void }) {
           <div className="grid gap-1"><Label>Description</Label><textarea className="flex min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.description} onChange={e => set("description", e.target.value)} /></div>
           <div className="grid gap-1"><Label>Affected Systems</Label><Input placeholder="e.g. ERP, Email Server" value={form.affectedSystems} onChange={e => set("affectedSystems", e.target.value)} /></div>
           <div className="grid gap-1"><Label>Business Impact</Label><Input placeholder="e.g. Production down, data exposed" value={form.impact} onChange={e => set("impact", e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1">
+              <Label>MITRE ATT&CK Tactic</Label>
+              <Select value={form.mitreTactic || "none"} onValueChange={v => set("mitreTactic", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Select tactic" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {["Initial Access","Execution","Persistence","Privilege Escalation","Defense Evasion","Credential Access","Discovery","Lateral Movement","Collection","Exfiltration","Command and Control","Impact"].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1">
+              <Label>Technique ID</Label>
+              <Input placeholder="e.g. T1110 - Brute Force" value={form.mitreTechnique} onChange={e => set("mitreTechnique", e.target.value)} />
+            </div>
+          </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button onClick={submit} disabled={pending || !form.title}>{pending ? "Reporting…" : "Report Incident"}</Button>
         </div>
