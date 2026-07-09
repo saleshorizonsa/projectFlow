@@ -1,13 +1,5 @@
-/**
- * Scheduled sync endpoint — call this every 15 minutes from your cron scheduler.
- *
- * Vercel Cron (vercel.json):
- *   { "crons": [{ "path": "/api/cron/o365-sync", "schedule": "*/15 * * * *" }] }
- *
- * Any external scheduler (cURL):
- *   curl -X POST https://your-domain.com/api/cron/o365-sync \
- *        -H "x-cron-secret: <CRON_SECRET env var>"
- */
+// Scheduled sync endpoint — call every 15 min via Vercel Cron or external scheduler.
+// Header: x-cron-secret: <CRON_SECRET env var>
 
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
