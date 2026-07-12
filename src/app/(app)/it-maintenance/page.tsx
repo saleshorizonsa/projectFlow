@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 import { CalendarClock, HardDrive, KeyRound, LifeBuoy, ShieldCheck, TriangleAlert } from "lucide-react";
-import { AssetRegisterTable, hardwareRecommendation, LicenseExpiryTable, MaintenanceCalendarTable } from "@/components/it-maintenance/it-maintenance-tables";
+import { AssetRegisterTable } from "@/components/it-maintenance/asset-register-table";
+import { hardwareRecommendation, LicenseExpiryTable, MaintenanceCalendarTable } from "@/components/it-maintenance/it-maintenance-tables";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

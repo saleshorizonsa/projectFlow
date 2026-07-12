@@ -1,6 +1,6 @@
 import { ITAssetForm } from "@/components/it-maintenance/it-forms";
 import { LicensePoolTable } from "@/components/it-maintenance/license-pool-table";
-import { AssetRegisterTable } from "@/components/it-maintenance/it-maintenance-tables";
+import { AssetRegisterTable } from "@/components/it-maintenance/asset-register-table";
 import { AssetLifecycleTab } from "@/components/it-maintenance/asset-lifecycle-tab";
 import { AssetSecurityTab } from "@/components/it-maintenance/asset-security-tab";
 import { CsvImportDialog } from "@/components/csv-import/csv-import-dialog";
