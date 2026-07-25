@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, CheckCircle2, ChevronRight, Circle, FileUp, XCircle, MinusCircle, RefreshCw } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronRight, Circle, FileUp, XCircle, MinusCircle, RefreshCw, FileDown } from "lucide-react";
 
 type ControlStatus = "NOT_ASSESSED" | "COMPLIANT" | "PARTIALLY_COMPLIANT" | "NON_COMPLIANT" | "NOT_APPLICABLE";
 
@@ -257,6 +257,15 @@ export default function CompliancePage() {
                         </div>
                         <Progress value={fwScore.pct} className="mt-2 h-3" />
                         <p className="mt-1 text-xs text-muted-foreground">{fwScore.compliant} of {fwScore.total} applicable controls compliant — {fw.name} {fw.version}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => window.open(`/api/compliance/report?frameworkId=${fw.id}`, "_blank")}
+                        >
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Generate {fw.code} Report (PDF)
+                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-3 text-sm lg:shrink-0">
                         {(Object.keys(STATUS_META) as ControlStatus[]).map(s => {
