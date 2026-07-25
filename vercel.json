@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/cron/o365-sync",
+      "path": "/api/cron/siem-sync",
       "schedule": "*/15 * * * *"
     }
   ]

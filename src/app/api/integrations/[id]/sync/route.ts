@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
-import { decryptField } from "@/lib/encrypt";
-import { syncO365, type O365Config } from "@/lib/integrations/o365";
+import { runIntegrationSync } from "@/lib/integrations/sync";
 
 export async function POST(
   _req: Request,
@@ -15,14 +14,6 @@ export async function POST(
   if (!integration) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!integration.enabled) return NextResponse.json({ error: "Integration is disabled" }, { status: 400 });
 
-  if (integration.type !== "O365") {
-    return NextResponse.json({ error: `Sync not implemented for type: ${integration.type}` }, { status: 400 });
-  }
-
-  if (!integration.tenantId || !integration.clientId || !integration.clientSecret) {
-    return NextResponse.json({ error: "Integration is missing credentials. Please configure it first." }, { status: 400 });
-  }
-
   // Mark as running
   await getPrisma().integration.update({
     where: { id },
@@ -30,16 +21,7 @@ export async function POST(
   });
 
   try {
-    const clientSecret = decryptField(integration.clientSecret);
-    const config = (integration.config ?? { contentTypes: ["Audit.AzureActiveDirectory"] }) as O365Config;
-
-    const result = await syncO365(
-      integration.tenantId,
-      integration.clientId,
-      clientSecret,
-      config,
-      integration.lastSyncAt,
-    );
+    const result = await runIntegrationSync(integration);
 
     await getPrisma().integration.update({
       where: { id },
