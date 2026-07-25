@@ -51,6 +51,42 @@ export async function GET(request: Request) {
     });
   }
 
+  // ── CSV export of the control matrix (auditors filter this alongside the PDF) ──
+  if (url.searchParams.get("format") === "csv") {
+    const esc = (v: unknown): string => {
+      const raw = v == null ? "" : String(v);
+      const text = /^[=+\-@\t\r|%]/.test(raw) ? `'${raw}` : raw; // neutralise CSV-injection
+      return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    };
+    const headers = ["Domain Code", "Domain", "Control ID", "Title", "Status", "Responsible", "Evidence Count", "Last Assessed", "Implementation Notes"];
+    const rows = [headers.join(",")];
+    for (const d of framework.domains) {
+      for (const c of d.controls) {
+        rows.push(
+          [
+            esc(d.code),
+            esc(d.name),
+            esc(c.controlId),
+            esc(c.title),
+            esc(STATUS_LABELS[c.status] ?? c.status),
+            esc(c.responsible?.name ?? "Unassigned"),
+            esc(c.evidences.length),
+            esc(fmtDate(c.lastAssessedAt)),
+            esc(c.implementationNotes ?? ""),
+          ].join(","),
+        );
+      }
+    }
+    const csv = rows.join("\r\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${framework.code}-controls-${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   const companies = await prisma.company.findMany({ where: { active: true }, orderBy: { name: "asc" } });
   const organization = companies.map((c) => c.name).join(" / ") || "Organization";
 

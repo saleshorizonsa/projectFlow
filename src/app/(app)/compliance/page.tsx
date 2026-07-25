@@ -191,12 +191,33 @@ export default function CompliancePage() {
   const [activeFramework, setActiveFramework] = useState<string>("");
   const [selectedControl, setSelectedControl] = useState<Control | null>(null);
   const [controlDialogOpen, setControlDialogOpen] = useState(false);
+  const [siemPending, setSiemPending] = useState(false);
 
   function load() {
     fetch("/api/compliance/frameworks").then(r => r.json()).then((data: Framework[]) => {
       setFrameworks(data);
       if (data.length > 0 && !activeFramework) setActiveFramework(data[0].id);
     }).catch(() => {});
+  }
+
+  async function linkSiemEvidence() {
+    setSiemPending(true);
+    try {
+      const res = await fetch("/api/compliance/link-siem-evidence", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        window.alert(
+          data.linked > 0 || data.updated > 0
+            ? `Microsoft 365 SIEM attached as evidence to ${data.controls.join(", ")} (${data.linked} new, ${data.updated} updated). Review each control and set its status.`
+            : (data.message ?? "No SIEM evidence to link."),
+        );
+        load();
+      } else {
+        window.alert(data.error ?? "Failed to link SIEM evidence.");
+      }
+    } finally {
+      setSiemPending(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -257,15 +278,30 @@ export default function CompliancePage() {
                         </div>
                         <Progress value={fwScore.pct} className="mt-2 h-3" />
                         <p className="mt-1 text-xs text-muted-foreground">{fwScore.compliant} of {fwScore.total} applicable controls compliant — {fw.name} {fw.version}</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => window.open(`/api/compliance/report?frameworkId=${fw.id}`, "_blank")}
-                        >
-                          <FileDown className="mr-2 h-4 w-4" />
-                          Generate {fw.code} Report (PDF)
-                        </Button>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/api/compliance/report?frameworkId=${fw.id}`, "_blank")}
+                          >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Report (PDF)
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/api/compliance/report?frameworkId=${fw.id}&format=csv`, "_blank")}
+                          >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Control Matrix (CSV)
+                          </Button>
+                          {fw.code === "SACS-210" && (
+                            <Button variant="outline" size="sm" onClick={linkSiemEvidence} disabled={siemPending}>
+                              <RefreshCw className={`mr-2 h-4 w-4 ${siemPending ? "animate-spin" : ""}`} />
+                              {siemPending ? "Linking…" : "Link SIEM Evidence"}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-3 text-sm lg:shrink-0">
                         {(Object.keys(STATUS_META) as ControlStatus[]).map(s => {
