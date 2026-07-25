@@ -1,27 +1,32 @@
-// Scheduled sync endpoint — call every 15 min via Vercel Cron or external scheduler.
-// Header: x-cron-secret: <CRON_SECRET env var>
+// Scheduled sync endpoint — runs every 15 min via Vercel Cron (see vercel.json).
+//
+// Vercel Cron invokes this with a GET request and, when CRON_SECRET is set, an
+// "Authorization: Bearer <CRON_SECRET>" header. External schedulers can use POST
+// with either that Authorization header or "x-cron-secret: <CRON_SECRET>".
 
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { decryptField } from "@/lib/encrypt";
 import { syncO365, type O365Config } from "@/lib/integrations/o365";
 
-export async function POST(request: Request) {
-  // Protect with a shared secret (set CRON_SECRET in your environment)
+/** Returns true when the request carries the configured cron secret (or no secret is set). */
+function isAuthorized(request: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const incoming = request.headers.get("x-cron-secret") ?? request.headers.get("authorization")?.replace("Bearer ", "");
-    if (incoming !== cronSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  if (!cronSecret) return true; // no secret configured — allow (dev / trusted network)
+  const incoming =
+    request.headers.get("x-cron-secret") ??
+    request.headers.get("authorization")?.replace("Bearer ", "");
+  return incoming === cronSecret;
+}
 
-  const integrations = await getPrisma().integration.findMany({
+async function runO365Sync() {
+  const prisma = getPrisma();
+  const integrations = await prisma.integration.findMany({
     where: { type: "O365", enabled: true },
   });
 
   if (integrations.length === 0) {
-    return NextResponse.json({ ok: true, message: "No enabled O365 integrations found." });
+    return { ok: true, message: "No enabled O365 integrations found.", results: [] as Record<string, unknown>[] };
   }
 
   const results: Record<string, unknown>[] = [];
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      await getPrisma().integration.update({
+      await prisma.integration.update({
         where: { id: integration.id },
         data:  { lastSyncStatus: "RUNNING" },
       });
@@ -49,7 +54,7 @@ export async function POST(request: Request) {
         integration.lastSyncAt,
       );
 
-      await getPrisma().integration.update({
+      await prisma.integration.update({
         where: { id: integration.id },
         data:  {
           lastSyncAt:     new Date(),
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      await getPrisma().integration.update({
+      await prisma.integration.update({
         where: { id: integration.id },
         data:  { lastSyncStatus: "ERROR", lastSyncError: msg },
       }).catch(() => {});
@@ -76,11 +81,16 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, results });
+  return { ok: true, results };
 }
 
-// Also support GET for simple health-check pings
-export async function GET() {
-  const count = await getPrisma().integration.count({ where: { type: "O365", enabled: true } });
-  return NextResponse.json({ ok: true, enabledO365Integrations: count });
+// Vercel Cron uses GET. External schedulers can use POST. Both run the same sync.
+export async function GET(request: Request) {
+  if (!isAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(await runO365Sync());
+}
+
+export async function POST(request: Request) {
+  if (!isAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(await runO365Sync());
 }
