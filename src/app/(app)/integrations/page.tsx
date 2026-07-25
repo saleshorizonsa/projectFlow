@@ -555,7 +555,7 @@ export default function IntegrationsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>All enabled integrations sync automatically every 15 minutes via Vercel Cron. To trigger manually or from an external scheduler:</p>
+          <p>All enabled integrations sync automatically once daily via Vercel Cron (Hobby plan limit; upgrade to Pro for more frequent syncs). Use “Sync Now” for on-demand. To trigger from an external scheduler:</p>
           <code className="block bg-card border rounded px-3 py-2 text-xs font-mono break-all">
             POST /api/cron/siem-sync  —  Header: x-cron-secret: YOUR_CRON_SECRET
           </code>
