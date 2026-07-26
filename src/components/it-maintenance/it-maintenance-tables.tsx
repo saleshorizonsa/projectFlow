@@ -28,6 +28,13 @@ export type AssetTableRow = {
   employee: Employee | null;
   companies: { company: Company }[];
   maintenances?: { scheduledAt: Date; status: string }[];
+  disposalDate?: Date | null;
+  disposalMethod?: string | null;
+  sanitizationMethod?: string | null;
+  sanitizationStatus?: string | null;
+  disposalCertificate?: string | null;
+  decommissionedBy?: string | null;
+  disposalNotes?: string | null;
 };
 
 export type MaintenanceTableRow = {

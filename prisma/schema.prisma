@@ -382,6 +382,14 @@ model ITAsset {
   employeeId     String?
   employee       Employee?        @relation("EmployeeAssets", fields: [employeeId], references: [id], onDelete: SetNull)
   notes          String?
+  // ── Decommission / disposal (SACS-210 asset lifecycle + media sanitization) ──
+  disposalDate         DateTime?
+  disposalMethod       String?   // RECYCLED | DESTROYED | RESOLD | RETURNED_TO_VENDOR | DONATED | LOST | OTHER
+  sanitizationMethod   String?   // NIST SP 800-88: CLEAR | PURGE | DESTROY | NOT_APPLICABLE
+  sanitizationStatus   String?   // PENDING | COMPLETED | NOT_REQUIRED
+  disposalCertificate  String?   // certificate of destruction / disposal reference
+  decommissionedBy     String?   // person/role who performed decommission
+  disposalNotes        String?
   companies      ITAssetCompany[]
   maintenances    ITMaintenance[]
   licenses        ITLicense[]
@@ -390,6 +398,7 @@ model ITAsset {
   vulnerabilities Vulnerability[]
   backupJobs      BackupJob[]
   incidents       IncidentAsset[]
+  lifecycleEvents AssetLifecycleEvent[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   createdBy      String?
@@ -397,6 +406,20 @@ model ITAsset {
 
   @@index([status])
   @@index([assignedToId])
+}
+
+// Immutable audit trail of asset lifecycle stage transitions.
+model AssetLifecycleEvent {
+  id        String   @id @default(cuid())
+  assetId   String
+  asset     ITAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus  String
+  note      String?
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  @@index([assetId])
 }
 
 model ITAssetCompany {

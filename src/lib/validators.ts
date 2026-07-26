@@ -167,6 +167,16 @@ export const itAssetUpdateSchema = itAssetSchema.partial().extend({
   companyIds: z.array(z.string().min(1)).min(1, "Select at least one company").optional(),
 });
 
+export const assetDecommissionSchema = z.object({
+  disposalDate: z.coerce.date(),
+  disposalMethod: z.enum(["RECYCLED", "DESTROYED", "RESOLD", "RETURNED_TO_VENDOR", "DONATED", "LOST", "OTHER"]),
+  sanitizationMethod: z.enum(["CLEAR", "PURGE", "DESTROY", "NOT_APPLICABLE"]),
+  sanitizationStatus: z.enum(["PENDING", "COMPLETED", "NOT_REQUIRED"]),
+  disposalCertificate: z.string().max(200).optional().nullable(),
+  decommissionedBy: z.string().max(120).optional().nullable(),
+  disposalNotes: z.string().max(2000).optional().nullable(),
+});
+
 export const itMaintenanceSchema = z.object({
   maintenanceId: z.string().min(2),
   title: z.string().min(3),

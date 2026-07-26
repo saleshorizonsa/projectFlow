@@ -3,10 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AssetTableRow } from "@/components/it-maintenance/it-maintenance-tables";
+import { AssetDecommissionDialog } from "@/components/it-maintenance/asset-decommission-dialog";
 
-type LifecycleStatus = "retired" | "eol" | "near-eol" | "warranty-expiring" | "healthy";
+type LifecycleStatus = "decommissioned" | "retired" | "eol" | "near-eol" | "warranty-expiring" | "healthy";
 
 function getLifecycleStatus(asset: AssetTableRow, now: Date): LifecycleStatus {
+  if (asset.disposalDate) return "decommissioned";
   if (asset.status === "RETIRED") return "retired";
   const age = differenceInYears(now, new Date(asset.purchaseDate));
   if (age >= asset.lifecycleYears) return "eol";
@@ -19,6 +21,7 @@ function getLifecycleStatus(asset: AssetTableRow, now: Date): LifecycleStatus {
 }
 
 const STATUS_META: Record<LifecycleStatus, { label: string; variant: "destructive" | "warning" | "secondary" | "success" }> = {
+  "decommissioned":     { label: "Decommissioned",    variant: "secondary" },
   "retired":            { label: "Retired",           variant: "secondary" },
   "eol":                { label: "End of Life",        variant: "destructive" },
   "near-eol":           { label: "Near EOL",           variant: "warning" },
@@ -26,7 +29,13 @@ const STATUS_META: Record<LifecycleStatus, { label: string; variant: "destructiv
   "healthy":            { label: "Healthy",            variant: "success" },
 };
 
-const STATUS_ORDER: LifecycleStatus[] = ["eol", "near-eol", "warranty-expiring", "retired", "healthy"];
+const STATUS_ORDER: LifecycleStatus[] = ["eol", "near-eol", "warranty-expiring", "retired", "healthy", "decommissioned"];
+
+const SANITIZATION_VARIANT: Record<string, "success" | "warning" | "secondary"> = {
+  COMPLETED: "success",
+  PENDING: "warning",
+  NOT_REQUIRED: "secondary",
+};
 
 export function AssetLifecycleTab({ assets }: { assets: AssetTableRow[] }) {
   const now = new Date();
@@ -85,6 +94,7 @@ export function AssetLifecycleTab({ assets }: { assets: AssetTableRow[] }) {
                   <TableHead>Warranty Expiry</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Lifecycle Status</TableHead>
+                  <TableHead>Disposal / Sanitization</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,12 +144,35 @@ export function AssetLifecycleTab({ assets }: { assets: AssetTableRow[] }) {
                       <TableCell>
                         <Badge variant={meta.variant}>{meta.label}</Badge>
                       </TableCell>
+                      <TableCell>
+                        {asset.disposalDate ? (
+                          <div className="space-y-0.5 text-xs">
+                            <div className="font-medium">
+                              {new Date(asset.disposalDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                              {asset.disposalMethod ? ` · ${asset.disposalMethod.replaceAll("_", " ").toLowerCase()}` : ""}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1">
+                              {asset.sanitizationMethod && <span className="text-muted-foreground">NIST {asset.sanitizationMethod}</span>}
+                              {asset.sanitizationStatus && (
+                                <Badge variant={SANITIZATION_VARIANT[asset.sanitizationStatus] ?? "secondary"} className="text-[10px] px-1 py-0">
+                                  {asset.sanitizationStatus.replaceAll("_", " ")}
+                                </Badge>
+                              )}
+                            </div>
+                            {asset.disposalCertificate && <div className="text-muted-foreground">CoD: {asset.disposalCertificate}</div>}
+                          </div>
+                        ) : asset.status === "RETIRED" ? (
+                          <span className="text-xs text-orange-500">Retired — disposal not recorded</span>
+                        ) : (
+                          <AssetDecommissionDialog asset={{ id: asset.id, assetTag: asset.assetTag, name: asset.name }} />
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">No assets found.</TableCell>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No assets found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

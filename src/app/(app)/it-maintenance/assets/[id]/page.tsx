@@ -34,6 +34,7 @@ export default async function AssetDetailPage({ params }: PageProps) {
         take: 10,
         include: { responsible: { select: { name: true } } },
       },
+      lifecycleEvents: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
   if (!asset) notFound();
@@ -240,6 +241,45 @@ export default async function AssetDetailPage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground">No maintenance records on file.</p>
             )}
           </section>
+
+          {/* Disposal & Sanitization record */}
+          {asset.disposalDate && (
+            <section>
+              <SectionTitle>Disposal &amp; Sanitization Record</SectionTitle>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Info label="Disposal Date" value={new Date(asset.disposalDate).toLocaleDateString("en-GB")} />
+                <Info label="Disposal Method" value={asset.disposalMethod ? formatEnum(asset.disposalMethod) : "—"} />
+                <Info label="Sanitization (NIST 800-88)" value={asset.sanitizationMethod ? formatEnum(asset.sanitizationMethod) : "—"} />
+                <Info label="Sanitization Status" value={asset.sanitizationStatus ? formatEnum(asset.sanitizationStatus) : "—"} />
+                <Info label="Certificate / Reference" value={asset.disposalCertificate ?? "—"} />
+                <Info label="Decommissioned By" value={asset.decommissionedBy ?? "—"} />
+                {asset.disposalNotes && (
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <div className="text-xs text-muted-foreground">Notes</div>
+                    <div className="mt-0.5 text-sm">{asset.disposalNotes}</div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Lifecycle transition history */}
+          {asset.lifecycleEvents.length > 0 && (
+            <section>
+              <SectionTitle>Lifecycle History</SectionTitle>
+              <div className="space-y-2">
+                {asset.lifecycleEvents.map((ev) => (
+                  <div key={ev.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span className="text-xs text-muted-foreground">{new Date(ev.createdAt).toLocaleDateString("en-GB")}</span>
+                    <Badge variant="outline">{ev.fromStatus ? formatEnum(ev.fromStatus) : "—"}</Badge>
+                    <span className="text-muted-foreground">→</span>
+                    <Badge variant="secondary">{formatEnum(ev.toStatus)}</Badge>
+                    {ev.note && <span className="text-xs text-muted-foreground">· {ev.note}</span>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Signature blocks */}
           <section className="grid gap-10 pt-4 sm:grid-cols-3 print:pt-2">

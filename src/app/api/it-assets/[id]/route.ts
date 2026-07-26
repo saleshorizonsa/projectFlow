@@ -42,6 +42,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
+  // Record a lifecycle event when the status changes (audit trail of stage transitions)
+  if (payload.status !== undefined) {
+    const current = await getPrisma().iTAsset.findUnique({ where: { id }, select: { status: true } });
+    if (current && current.status !== payload.status) {
+      await getPrisma().assetLifecycleEvent.create({
+        data: {
+          assetId: id,
+          fromStatus: current.status,
+          toStatus: payload.status,
+          note: "Status changed via asset edit",
+          createdBy: session.user.id,
+        },
+      });
+    }
+  }
+
   const asset = await getPrisma().iTAsset.update({
     where: { id },
     data: {
