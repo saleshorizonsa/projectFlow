@@ -1,8 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { emailProvider, sendEmail } from "@/lib/alert-dispatcher";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+
+export async function sendTestEmail() {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN" || !session.user.email) return;
+
+  let result: string;
+  try {
+    await sendEmail(
+      session.user.email,
+      "JASCOMiyaar test email",
+      `Email alerts are working. Provider: ${emailProvider()}. Sent ${new Date().toISOString()}.`,
+    );
+    result = "email=sent";
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Email delivery failed.";
+    result = `email=failed&reason=${encodeURIComponent(reason.slice(0, 300))}`;
+  }
+  redirect(`/notifications?${result}`);
+}
 
 export async function markOneRead(id: string) {
   const session = await auth();
