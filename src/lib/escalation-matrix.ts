@@ -1,5 +1,6 @@
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { NotificationType, type PrismaClient } from "@prisma/client";
+import { dispatchNotificationAlert } from "@/lib/alert-dispatcher";
 import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
 
@@ -257,7 +258,7 @@ export async function syncEscalationNotifications(prisma: PrismaClient = getPris
         },
       });
       if (!existing) {
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             userId,
             type: item.notificationType,
@@ -265,6 +266,7 @@ export async function syncEscalationNotifications(prisma: PrismaClient = getPris
             message,
           },
         });
+        await dispatchNotificationAlert(prisma, notification);
         created += 1;
       }
     }

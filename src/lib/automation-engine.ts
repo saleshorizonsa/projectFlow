@@ -1,6 +1,8 @@
 import { addDays, differenceInCalendarDays, differenceInYears } from "date-fns";
 import { NotificationType, type PrismaClient, type User } from "@prisma/client";
-import { dispatchAlert } from "@/lib/alert-dispatcher";
+import { dispatchNotificationAlert } from "@/lib/alert-dispatcher";
+import { syncDeadlineNotificationsForUser } from "@/lib/deadline-engine";
+import { syncEscalationNotifications } from "@/lib/escalation-matrix";
 import { getPrisma } from "@/lib/prisma";
 
 type AutomationResult = {
@@ -16,13 +18,27 @@ export async function runAutomationEngine(prisma: PrismaClient = getPrisma(), no
     syncAssetLifecycle(prisma, now),
     syncMaintenanceDue(prisma, now),
   ]);
+  // Run after the checks above and one user at a time to stay within the pooled connection limit.
+  const deadlines = await syncAllDeadlineNotifications(prisma, now);
+  const escalations = await syncEscalationNotifications(prisma, now);
 
   return [
     { name: "SLA breach escalation", count: slaBreaches, description: "Open tickets past response or resolution SLA create assignee/admin alerts." },
     { name: "License renewal alerts", count: licenseRenewals, description: "Licenses expiring in 45 days create owner/admin renewal alerts." },
     { name: "Asset lifecycle review", count: assetLifecycle, description: "Assets near or past lifecycle create custodian/admin upgrade alerts." },
     { name: "Maintenance reminders", count: maintenanceDue, description: "Maintenance due within 7 days creates responsible-user alerts." },
+    { name: "Deadline alerts", count: deadlines, description: "Overdue tasks, gaps, milestones and projects alert their owners." },
+    { name: "Escalation alerts", count: escalations, description: "New escalation matrix items alert the owner, project manager and admins." },
   ];
+}
+
+async function syncAllDeadlineNotifications(prisma: PrismaClient, now: Date) {
+  const users = await prisma.user.findMany({ select: { id: true } });
+  let count = 0;
+  for (const user of users) {
+    count += await syncDeadlineNotificationsForUser(user.id, prisma, now);
+  }
+  return count;
 }
 
 async function syncSlaBreaches(prisma: PrismaClient, now: Date) {
@@ -150,12 +166,7 @@ async function createNotification(prisma: PrismaClient, data: { user: Pick<User,
       message: data.message,
     },
   });
-  await dispatchAlert(prisma, {
-    title: data.title,
-    message: data.message,
-    notification,
-    recipient: { user: data.user },
-  });
+  await dispatchNotificationAlert(prisma, notification);
 }
 
 async function adminUsers(prisma: PrismaClient) {

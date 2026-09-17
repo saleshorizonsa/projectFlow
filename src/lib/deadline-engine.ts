@@ -1,5 +1,6 @@
 import { addDays, differenceInCalendarDays, endOfDay, startOfDay } from "date-fns";
 import { NotificationType, type PrismaClient, type ProjectStatus } from "@prisma/client";
+import { dispatchNotificationAlert } from "@/lib/alert-dispatcher";
 import { projectCompanyWhere, relatedProjectCompanyWhere, userCompanyWhere } from "@/lib/company-filter";
 import { getPrisma } from "@/lib/prisma";
 
@@ -291,7 +292,8 @@ export async function syncDeadlineNotificationsForUser(userId: string, prisma: P
     });
 
     if (!existing) {
-      await prisma.notification.create({ data: candidate });
+      const notification = await prisma.notification.create({ data: candidate });
+      await dispatchNotificationAlert(prisma, notification);
     }
   }
 

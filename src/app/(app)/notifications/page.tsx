@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CheckCheck, Check, X, Trash2, ArrowRight } from "lucide-react";
+import { Bell, CheckCheck, Check, X, Trash2, ArrowRight, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { syncDeadlineNotificationsForUser } from "@/lib/deadline-engine";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
-import { markOneRead, markAllRead, dismissOne, dismissAllRead } from "./actions";
+import { markOneRead, markAllRead, dismissOne, dismissAllRead, sendTestEmail } from "./actions";
 
 function timeAgo(date: Date) {
   const secs = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -30,7 +30,7 @@ const ENTITY_HREFS: Record<string, string> = {
   AUTOMATION: "/automation",
 };
 
-type SearchParams = { type?: string };
+type SearchParams = { type?: string; email?: string; reason?: string };
 
 export default async function NotificationsPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   const session = await auth();
@@ -68,6 +68,14 @@ export default async function NotificationsPage({ searchParams }: { searchParams
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {session?.user.role === "ADMIN" && (
+            <form action={sendTestEmail}>
+              <Button type="submit" variant="outline" size="sm">
+                <Mail className="mr-1 h-4 w-4" />
+                Send test email
+              </Button>
+            </form>
+          )}
           {unreadCount > 0 ? (
             <Badge variant="destructive">{unreadCount} unread</Badge>
           ) : notifications.length > 0 ? (
@@ -91,6 +99,17 @@ export default async function NotificationsPage({ searchParams }: { searchParams
           )}
         </div>
       </div>
+
+      {sp?.email === "sent" && (
+        <p className="rounded-md border border-green-600/30 bg-green-600/10 px-3 py-2 text-sm">
+          Test email sent to {session?.user.email}. Check the inbox (and spam folder).
+        </p>
+      )}
+      {sp?.email === "failed" && (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          Test email failed: {sp.reason ?? "unknown error"}
+        </p>
+      )}
 
       {/* Type filter pills */}
       {allTypes.length > 1 && (

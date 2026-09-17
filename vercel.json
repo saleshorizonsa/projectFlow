@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/siem-sync",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/automation/scheduled",
+      "schedule": "0 5 * * *"
     }
   ]
 }
