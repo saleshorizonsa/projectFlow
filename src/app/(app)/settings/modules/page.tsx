@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { auth } from "@/lib/auth";
 import { readModuleSettings } from "@/lib/modules";
 import { MODULES, NAV_GROUPS } from "@/lib/navigation";
-import { saveModuleSettings } from "./actions";
+import { saveModuleSettings, setupModuleStorage } from "./actions";
 
 export const metadata = { title: "Modules" };
 
-export default async function ModulesSettingsPage({ searchParams }: { searchParams?: Promise<{ saved?: string; error?: string }> }) {
+export default async function ModulesSettingsPage({ searchParams }: { searchParams?: Promise<{ saved?: string; error?: string; setup?: string }> }) {
   const session = await auth();
   if (session?.user.role !== "ADMIN") redirect("/dashboard");
 
@@ -31,13 +31,22 @@ export default async function ModulesSettingsPage({ searchParams }: { searchPara
       </Card>
 
       {!storageReady && (
-        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          Module settings can&apos;t be saved yet: the database is missing the <code>AppSetting</code> table. Apply the
-          <code> 20261117090000_add_app_settings</code> migration, then reload this page. Until then every module stays on.
+        <div role="alert" className="flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="font-semibold">One-time setup needed</div>
+            <div className="text-muted-foreground">
+              Module settings need a small settings table in the database. Until it&apos;s set up, every module stays on. Existing data is not changed.
+            </div>
+          </div>
+          <form action={setupModuleStorage}>
+            <Button type="submit" className="shrink-0">Set up module settings</Button>
+          </form>
         </div>
       )}
+      {params.setup && storageReady && <div role="status" className="rounded-md border border-primary/30 bg-primary/10 p-4 text-sm">Setup complete. You can now turn modules on or off.</div>}
       {params.saved && <div role="status" className="rounded-md border border-primary/30 bg-primary/10 p-4 text-sm">Module settings saved.</div>}
-      {params.error && <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">Module settings could not be saved. Please try again.</div>}
+      {params.error === "setup" && <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">Setup failed. Please try again, or contact support if it keeps failing.</div>}
+      {params.error && params.error !== "setup" && <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">Module settings could not be saved. Please try again.</div>}
 
       <form action={saveModuleSettings}>
         <Card>

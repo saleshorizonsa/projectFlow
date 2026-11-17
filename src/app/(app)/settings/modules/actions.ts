@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
-import { saveDisabledModules } from "@/lib/modules";
+import { ensureModuleStorage, saveDisabledModules } from "@/lib/modules";
 import { MODULE_KEYS } from "@/lib/navigation";
 
 export async function saveModuleSettings(formData: FormData) {
@@ -22,6 +22,20 @@ export async function saveModuleSettings(formData: FormData) {
     revalidatePath("/", "layout");
   } catch {
     result = "error=1";
+  }
+  redirect(`/settings/modules?${result}`);
+}
+
+export async function setupModuleStorage() {
+  const session = await auth();
+  if (session?.user.role !== "ADMIN") redirect("/dashboard");
+
+  let result = "setup=1";
+  try {
+    await ensureModuleStorage();
+    await audit({ userId: session.user.id, action: "CREATE", entity: "AppSetting", entityId: "table" });
+  } catch {
+    result = "error=setup";
   }
   redirect(`/settings/modules?${result}`);
 }
