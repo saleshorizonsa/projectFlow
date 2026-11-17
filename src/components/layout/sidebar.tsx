@@ -1,113 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart2, BarChart3, Bell, BellRing, BookOpen, Bot, Building2, Bug, Calendar, CalendarClock, ChevronDown, ClipboardList, DatabaseBackup, Flag, FolderKanban, Gauge, GitBranch, HardDrive, IdCard, KeyRound, LifeBuoy, Menu, Plug, Search, Shield, ShieldAlert, Siren, TriangleAlert, FileText, Users, UserCircle, ScrollText, AlertTriangle, CheckSquare } from "lucide-react";
+import { ChevronDown, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { NavLink } from "@/components/layout/nav-link";
 import { useSidebarStore } from "@/components/layout/sidebar-store";
-
-const navSections = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/dashboard", label: "Overview", icon: Gauge },
-    ],
-  },
-  {
-    label: "Organisation Setup",
-    items: [
-      { href: "/companies", label: "Companies", icon: Building2 },
-      { href: "/companies/new", label: "Add Company", icon: Building2 },
-      { href: "/team", label: "Team & Roles", icon: Users },
-      { href: "/team/new", label: "Add Team Member", icon: Users },
-      { href: "/employees", label: "Employees", icon: IdCard },
-    ],
-  },
-  {
-    label: "Projects & Planning",
-    items: [
-      { href: "/projects", label: "Projects", icon: FolderKanban },
-      { href: "/projects/new", label: "Create Project", icon: FolderKanban },
-      { href: "/workflow", label: "Process Workflow", icon: GitBranch },
-      { href: "/milestones", label: "Milestones", icon: Flag },
-    ],
-  },
-  {
-    label: "Task Management",
-    items: [
-      { href: "/tasks", label: "Task Register", icon: ClipboardList },
-      { href: "/tasks/new", label: "Create Task", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "Gap & Execution",
-    items: [
-      { href: "/gaps", label: "Gap Analysis", icon: TriangleAlert },
-      { href: "/deadlines", label: "Execution Deadlines", icon: CalendarClock },
-      { href: "/escalations", label: "Escalation Matrix", icon: ShieldAlert },
-    ],
-  },
-  {
-    label: "IT Operations",
-    items: [
-      { href: "/it-maintenance", label: "IT Overview", icon: HardDrive },
-      { href: "/it-maintenance/assets", label: "Assets & Apps", icon: HardDrive },
-      { href: "/it-maintenance/maintenance", label: "Maintenance Windows", icon: CalendarClock },
-      { href: "/it-maintenance/licenses", label: "Licenses & Renewals", icon: KeyRound },
-      { href: "/it-maintenance/licenses/new", label: "Add License", icon: KeyRound },
-      { href: "/it-maintenance/licenses/renewals", label: "Renewal Risks", icon: TriangleAlert },
-      { href: "/calendar", label: "IT Operations Calendar", icon: Calendar },
-      { href: "/resources", label: "Resource Allocation", icon: Users },
-      { href: "/automation", label: "Automation Center", icon: Bot },
-    ],
-  },
-  {
-    label: "IT Support",
-    items: [
-      { href: "/support", label: "Support Overview", icon: LifeBuoy },
-      { href: "/support/new", label: "Log Support Ticket", icon: LifeBuoy },
-      { href: "/support/tickets", label: "Ticket Register", icon: LifeBuoy },
-    ],
-  },
-  {
-    label: "Cybersecurity & Compliance",
-    items: [
-      { href: "/compliance", label: "Compliance Dashboard", icon: CheckSquare },
-      { href: "/risk-register", label: "Risk Register", icon: AlertTriangle },
-      { href: "/vulnerability-management", label: "Vulnerability Management", icon: Bug },
-      { href: "/backup-monitoring", label: "Backup Monitoring", icon: DatabaseBackup },
-      { href: "/policy-management", label: "Policy Management", icon: FileText },
-      { href: "/security-events", label: "Security Events", icon: Activity },
-      { href: "/alert-rules", label: "Alert Rules", icon: BellRing },
-      { href: "/incident-response", label: "Incident Response", icon: Siren },
-      { href: "/playbooks", label: "IR Playbooks", icon: BookOpen },
-      { href: "/audit", label: "Audit Log & Evidence", icon: ScrollText },
-    ],
-  },
-  {
-    label: "Reports & Insights",
-    items: [
-      { href: "/reports", label: "Reports & Analytics", icon: BarChart2 },
-      { href: "/notifications", label: "Feedback & Alerts", icon: Bell },
-    ],
-  },
-  {
-    label: "Integrations",
-    items: [
-      { href: "/integrations", label: "Connected Integrations", icon: Plug },
-    ],
-  },
-  {
-    label: "Administration",
-    items: [
-      { href: "/admin/users", label: "User Management", icon: Shield },
-      { href: "/profile", label: "My Profile & Security", icon: UserCircle },
-    ],
-  },
-];
+import { BRAND } from "@/lib/brand";
+import { activeHref, visibleNavGroups, type NavAccess, type NavGroup } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 
 type BadgeCounts = {
   openIncidents?: number;
@@ -127,16 +29,12 @@ const BADGE_MAP: Record<string, keyof BadgeCounts> = {
   "/security-events": "securityAlerts",
 };
 
-export function Sidebar() {
+export function Sidebar({ role, disabledModules }: NavAccess) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { collapsed, toggle } = useSidebarStore();
-  const companyQuery = searchParams.get("company");
   const [query, setQuery] = useState("");
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    Overview: true,
-    "Task Management": true,
-  });
+  // Explicit open/closed choices; groups without one follow the default (home + active group open).
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [badges, setBadges] = useState<BadgeCounts>({});
 
   useEffect(() => {
@@ -146,104 +44,137 @@ export function Sidebar() {
       .catch(() => {});
   }, []);
 
+  const groups = useMemo(() => visibleNavGroups({ role, disabledModules }), [role, disabledModules]);
+  const currentHref = activeHref(pathname, groups.flatMap((group) => group.items.map((item) => item.href)));
+  const activeGroupKey = groups.find((group) => group.items.some((item) => item.href === currentHref))?.key;
+
+  // Keep the group you navigate into open, even if it was collapsed earlier.
+  useEffect(() => {
+    if (activeGroupKey) setOpenGroups((current) => ({ ...current, [activeGroupKey]: true }));
+  }, [activeGroupKey]);
+
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredSections = useMemo(() => {
-    if (!normalizedQuery) return navSections;
-    return navSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) =>
-          `${section.label} ${item.label} ${item.href}`.toLowerCase().includes(normalizedQuery),
-        ),
+  const filteredGroups = useMemo(() => {
+    if (!normalizedQuery) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => `${group.label} ${item.label}`.toLowerCase().includes(normalizedQuery)),
       }))
-      .filter((section) => section.items.length > 0);
-  }, [normalizedQuery]);
+      .filter((group) => group.items.length > 0);
+  }, [groups, normalizedQuery]);
+
+  const mainGroups = filteredGroups.filter((group) => group.key !== "settings");
+  const settingsGroup = filteredGroups.find((group) => group.key === "settings");
+
+  function badgeFor(href: string) {
+    const key = BADGE_MAP[href];
+    return key ? badges[key] : undefined;
+  }
+
+  function isOpen(group: NavGroup) {
+    if (collapsed || normalizedQuery) return true;
+    return openGroups[group.key] ?? (group.key === "home" || group.key === activeGroupKey);
+  }
+
+  function toggleGroup(group: NavGroup) {
+    setOpenGroups((current) => ({ ...current, [group.key]: !isOpen(group) }));
+  }
+
+  function renderGroup(group: NavGroup) {
+    // A group with a single page is shown as a plain link, not a collapsible section.
+    if (group.items.length === 1) {
+      const item = group.items[0];
+      return (
+        <NavLink
+          key={group.key}
+          href={item.href}
+          label={group.label}
+          icon={group.icon}
+          active={item.href === currentHref}
+          collapsed={collapsed}
+          badge={badgeFor(item.href)}
+        />
+      );
+    }
+
+    const open = isOpen(group);
+    return (
+      <div key={group.key} className="space-y-0.5">
+        {collapsed ? (
+          <div className="mx-auto my-2 h-px w-8 bg-border" aria-hidden />
+        ) : (
+          <button
+            type="button"
+            onClick={() => toggleGroup(group)}
+            className={cn(
+              "flex h-9 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold text-foreground hover:bg-accent",
+              group.key === activeGroupKey && "text-primary",
+            )}
+            aria-expanded={open}
+          >
+            <group.icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{group.label}</span>
+            <ChevronDown className={cn("ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
+          </button>
+        )}
+        {open && (
+          <div className={cn("space-y-0.5", !collapsed && "ml-4 border-l pl-2")}>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={item.href === currentHref}
+                collapsed={collapsed}
+                badge={badgeFor(item.href)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <aside className={cn("sticky top-0 hidden h-screen border-r bg-card transition-all duration-200 lg:flex lg:flex-col", collapsed ? "lg:w-20" : "lg:w-72")}>
-      <div className="flex h-16 shrink-0 items-center justify-between px-4">
+      <div className={cn("flex h-16 shrink-0 items-center gap-3 border-b px-4", collapsed ? "justify-center" : "justify-between")}>
         {!collapsed && (
-          <div>
-            <div className="text-sm font-semibold">JASCOMiyaar</div>
-            <div className="text-xs text-muted-foreground">Execution control</div>
+          <div className="min-w-0">
+            <div className="truncate text-base font-bold tracking-tight">{BRAND.name}</div>
+            <div className="truncate text-xs text-muted-foreground">{BRAND.tagline}</div>
           </div>
         )}
-        <Button variant="ghost" size="icon" onClick={toggle} aria-label="Collapse sidebar">
+        <Button variant="ghost" size="icon" onClick={toggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           <Menu className="h-4 w-4" />
         </Button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4" aria-label="Main">
         {!collapsed && (
-          <div className="sticky top-0 z-10 mb-4 bg-card pb-3">
-            <div className="flex h-10 items-center gap-2 rounded-md border bg-background px-3">
+          <div className="sticky top-0 z-10 bg-card py-3">
+            <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-3">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search navigation"
+                placeholder="Search menu"
+                aria-label="Search menu"
                 className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
               />
             </div>
           </div>
         )}
-        <div className="flex flex-col gap-4">
-        {filteredSections.map((section) => (
-          <div key={section.label} className="space-y-1">
-            {(() => {
-              const exactRoutes = ["/it-maintenance", "/support", "/companies", "/team", "/projects"];
-              const sectionHasActiveItem = section.items.some((item) => exactRoutes.includes(item.href) ? pathname === item.href : pathname.startsWith(item.href));
-              const sectionOpen = collapsed || normalizedQuery.length > 0 || sectionHasActiveItem || openSections[section.label];
-              return (
-                <>
-                  {!collapsed && (
-                    <button
-                      type="button"
-                      onClick={() => setOpenSections((current) => ({ ...current, [section.label]: !current[section.label] }))}
-                      className="flex h-8 w-full items-center justify-between rounded-md px-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-foreground"
-                      aria-expanded={sectionOpen}
-                    >
-                      <span className="truncate">{section.label}</span>
-                      <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform", !sectionOpen && "-rotate-90")} />
-                    </button>
-                  )}
-                  {sectionOpen && section.items.map((item) => {
-              const active = exactRoutes.includes(item.href) ? pathname === item.href : pathname.startsWith(item.href);
-              const badgeKey = BADGE_MAP[item.href];
-              const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
-              return (
-                <Link
-                  key={item.href}
-                  href={companyQuery ? `${item.href}?company=${companyQuery}` : item.href}
-                  className={cn(
-                    "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground",
-                    active && "bg-primary/10 text-primary",
-                    collapsed && "justify-center px-0",
-                  )}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                  {!collapsed && badgeCount > 0 && (
-                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                      {badgeCount > 99 ? "99+" : badgeCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-                </>
-              );
-            })()}
-          </div>
-        ))}
+        <div className={cn("flex flex-col gap-1", collapsed && "pt-3")}>
+          {mainGroups.map(renderGroup)}
+          {!collapsed && normalizedQuery && filteredGroups.length === 0 && (
+            <p className="px-3 py-2 text-sm text-muted-foreground">No pages match “{query.trim()}”.</p>
+          )}
         </div>
       </nav>
-      <div className="shrink-0 border-t p-4">
-        <div className={cn("flex items-center gap-3 text-xs text-muted-foreground", collapsed && "justify-center")}>
-          <BarChart3 className="h-4 w-4" />
-          {!collapsed && <span>Deadline, gap and health tracking</span>}
-        </div>
-      </div>
+      {settingsGroup && (
+        <div className="max-h-[45%] shrink-0 overflow-y-auto border-t px-3 py-3">{renderGroup(settingsGroup)}</div>
+      )}
     </aside>
   );
 }

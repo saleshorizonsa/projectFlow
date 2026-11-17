@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { selectedCompanyId, type CompanySearchParams } from "@/lib/company-filter";
 import { getDashboardData, getSecurityPostureData } from "@/lib/dashboard";
 import { formatEnum, trafficLight } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 const statIcons = [FolderKanban, Gauge, AlertTriangle, CheckCircle2, TriangleAlert, AlertTriangle, CalendarClock, ClipboardList];
 
@@ -55,7 +56,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
                 <div className="text-sm font-medium opacity-85">Command Center</div>
                 <DashboardCustomizeButton />
               </div>
-              <div className="mt-2 text-3xl font-semibold leading-none">JASCOMiyaar</div>
+              <div className="mt-2 text-3xl font-semibold leading-none">{BRAND.name}</div>
+              <div className="mt-1.5 text-sm font-medium opacity-90">{BRAND.tagline}</div>
               <p className="mt-3 max-w-md text-sm leading-6 opacity-85">Live execution control for projects, gaps, deadlines, resources, and accountability.</p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">

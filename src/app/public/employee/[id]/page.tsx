@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 const NAVY = "#2e5090";
 const AMBER = "#c87a1c";
@@ -34,7 +35,7 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
       <div style={{ background: `linear-gradient(135deg, #0d1a2e 0%, ${NAVY} 100%)` }} className="px-4 py-5">
         <div className="mx-auto max-w-2xl flex items-center justify-between">
           <div>
-            <div className="text-base font-bold text-white mb-0.5">JASCOMiyaar</div>
+            <div className="text-base font-bold text-white mb-0.5">{BRAND.name}</div>
             <p className="text-xs" style={{ color: "rgba(148,163,184,0.7)" }}>Employee Handover Record — No login required</p>
           </div>
           <div className="text-right">
@@ -160,7 +161,7 @@ export default async function PublicEmployeePage({ params }: { params: Promise<{
 
         {/* ── Footer ── */}
         <p className="text-center text-xs text-gray-400 pt-2">
-          © {now.getFullYear()} Horizon Business Solutions Est. · JASCOMiyaar
+          © {now.getFullYear()} {BRAND.vendor} · {BRAND.name}
         </p>
       </div>
     </div>

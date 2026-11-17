@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { emailProvider, sendEmail } from "@/lib/alert-dispatcher";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { BRAND } from "@/lib/brand";
 
 export async function sendTestEmail() {
   const session = await auth();
@@ -14,7 +15,7 @@ export async function sendTestEmail() {
   try {
     await sendEmail(
       session.user.email,
-      "JASCOMiyaar test email",
+      `${BRAND.name} test email`,
       `Email alerts are working. Provider: ${emailProvider()}. Sent ${new Date().toISOString()}.`,
     );
     result = "email=sent";

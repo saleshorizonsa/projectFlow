@@ -1,5 +1,6 @@
 import { AlertChannel, AlertDeliveryStatus, type Notification, type PrismaClient, type User } from "@prisma/client";
 import nodemailer from "nodemailer";
+import { BRAND } from "@/lib/brand";
 
 type AlertRecipient = {
   user?: Pick<User, "id" | "email" | "phone"> | null;
@@ -147,7 +148,7 @@ export async function sendEmail(to: string, subject: string, text: string) {
   });
 
   // Gmail and Office 365 reject a From address other than the signed-in mailbox, so default to it.
-  const from = process.env.ALERT_FROM_EMAIL || `JASCOMiyaar <${process.env.SMTP_USER}>`;
+  const from = process.env.ALERT_FROM_EMAIL || `${BRAND.name} <${process.env.SMTP_USER}>`;
   await transport.sendMail({ from, to, subject, text });
 }
 

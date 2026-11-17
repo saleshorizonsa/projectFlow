@@ -2,8 +2,9 @@ import { generateSecret as otpGenerateSecret, generate, verify, generateURI } fr
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { encryptField, decryptField } from "@/lib/encrypt";
+import { BRAND } from "@/lib/brand";
 
-const ISSUER = "JASCOMiyaar";
+const ISSUER = BRAND.name;
 const TOTP_OPTIONS = { digits: 6 } as const;
 
 export function generateSecret(): string {
