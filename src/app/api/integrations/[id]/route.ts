@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { encryptField } from "@/lib/encrypt";
+import { audit } from "@/lib/audit";
 
 const SAFE_SELECT = {
   id: true, type: true, name: true, enabled: true,
@@ -59,8 +60,9 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
   const { id } = await params;
-  await getPrisma().integration.delete({ where: { id } });
+  const removed = await getPrisma().integration.delete({ where: { id }, select: { type: true, name: true } });
+  await audit({ userId: session.user.id, action: "DELETE", entity: "Integration", entityId: id, detail: removed });
   return NextResponse.json({ ok: true });
 }

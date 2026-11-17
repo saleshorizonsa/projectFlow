@@ -10,6 +10,7 @@ const PUBLIC_PREFIXES = [
   "/api/whatsapp",
   "/api/automation",
   "/api/vulnerabilities/webhook",
+  "/api/wazuh/",  // Wazuh manager pushes alerts; each request is checked against a per-integration token
   "/api/public",
   "/public",   // no-auth landing pages (asset, employee) reachable via QR scan
   "/api/cron",

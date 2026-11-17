@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, CheckCircle2, Clock, Cloud, Loader2, Plug, RefreshCw, Settings, Shield, Trash2, Wifi, WifiOff } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Clock, Cloud, Copy, KeyRound, Loader2, Plug, Radar, RefreshCw, Settings, Shield, Trash2, Wifi, WifiOff } from "lucide-react";
+import { WAZUH_INSTALL_COMMANDS, WAZUH_LEVELS, wazuhHookUrl, wazuhOssecConfBlock, wazuhOssecConfVulnBlock } from "@/lib/integrations/wazuh-setup";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,11 @@ const O365_CONTENT_TYPES = [
 const PROVIDERS: { type: string; name: string; icon: React.ElementType; accent: string; description: string }[] = [
   { type: "O365",   name: "Microsoft 365",  icon: Cloud,  accent: "text-blue-600 dark:text-blue-400 bg-blue-500/10",     description: "Azure AD, Exchange, SharePoint audit logs" },
   { type: "SOPHOS", name: "Sophos Central", icon: Shield, accent: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10", description: "Threat detections, IPS, web filtering" },
+  { type: "WAZUH",  name: "Wazuh",          icon: Radar,  accent: "text-teal-600 dark:text-teal-400 bg-teal-500/10",       description: "On-prem SIEM alerts and vulnerabilities (push)" },
 ];
+
+/** Push integrations receive data from the source, so there is nothing to "sync". */
+const PUSH_TYPES = new Set(["WAZUH"]);
 
 function providerMeta(type: string) {
   return PROVIDERS.find((p) => p.type === type) ?? { type, name: type, icon: Cloud, accent: "text-muted-foreground bg-muted", description: "" };
@@ -322,6 +327,202 @@ function SophosConfigDialog({ open, onClose, existing, onSaved }: ConfigDialogPr
   );
 }
 
+// ── Wazuh config dialog (push model) ──────────────────────────────────────────
+
+function CopyBlock({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs">{label}</Label>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-6 px-2 text-xs"
+          onClick={() => {
+            void navigator.clipboard?.writeText(value).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            });
+          }}
+        >
+          {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md border bg-muted/50 p-2 font-mono text-xs">{value}</pre>
+    </div>
+  );
+}
+
+function WazuhSetupSteps({ integrationId, token, minLevel, importVulnerabilities }: { integrationId: string; token: string | null; minLevel: number; importVulnerabilities: boolean }) {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const hookUrl = wazuhHookUrl(origin, integrationId);
+  const shownToken = token ?? "<YOUR_TOKEN>";
+  return (
+    <div className="space-y-3">
+      {token ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+          Copy the token now. For security it is shown only once. If you lose it, use <span className="font-medium">Regenerate token</span>.
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">The token is not shown again. Use <span className="font-medium">Regenerate token</span> to get a new one (the old one stops working).</p>
+      )}
+      <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+        <li>
+          Download the script{" "}
+          <a className="font-medium text-primary underline" href="/api/integrations/wazuh/script">custom-masar</a>{" "}
+          and copy it to the Wazuh manager.
+        </li>
+        <li>Install it and add the block{importVulnerabilities ? "s" : ""} below to <code>/var/ossec/etc/ossec.conf</code>.</li>
+        <li>Restart the manager. New alerts appear in Security Events within seconds.</li>
+      </ol>
+      <CopyBlock label="Webhook URL" value={hookUrl} />
+      {token && <CopyBlock label="Token" value={token} />}
+      <CopyBlock label="ossec.conf — alerts" value={wazuhOssecConfBlock(hookUrl, shownToken, minLevel)} />
+      {importVulnerabilities && <CopyBlock label="ossec.conf — vulnerabilities (recommended)" value={wazuhOssecConfVulnBlock(hookUrl, shownToken)} />}
+      <CopyBlock label="Install commands" value={WAZUH_INSTALL_COMMANDS} />
+      <p className="text-xs text-muted-foreground">The Wazuh manager only needs outbound HTTPS to this site. No inbound ports are opened.</p>
+    </div>
+  );
+}
+
+function WazuhConfigDialog({ open, onClose, existing, onSaved }: ConfigDialogProps) {
+  const [name, setName] = useState("");
+  const [minLevel, setMinLevel] = useState(7);
+  const [importVulns, setImportVulns] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ id: string; token: string | null } | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      const cfg = existing?.config as { minLevel?: number; importVulnerabilities?: boolean } | null;
+      setName(existing?.name ?? "Wazuh SIEM");
+      setMinLevel(typeof cfg?.minLevel === "number" ? cfg.minLevel : 7);
+      setImportVulns(cfg?.importVulnerabilities ?? true);
+      setError(null);
+      setCreated(existing ? { id: existing.id, token: null } : null);
+    }
+  }, [open, existing]);
+
+  async function handleSave() {
+    if (!name.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const config = { minLevel, importVulnerabilities: importVulns };
+      if (existing) {
+        const res = await fetch(`/api/integrations/${existing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), config }),
+        });
+        if (!res.ok) throw new Error();
+        onSaved();
+        onClose();
+      } else {
+        const res = await fetch("/api/integrations/wazuh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), ...config }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error();
+        setCreated({ id: data.integration.id, token: data.token });
+        onSaved();
+      }
+    } catch {
+      setError("Could not save. Please try again.");
+    }
+    setSaving(false);
+  }
+
+  async function handleRegenerate() {
+    if (!created) return;
+    if (!confirm("Generate a new token? The current token stops working until you update ossec.conf.")) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/integrations/${created.id}/wazuh-token`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      setCreated({ id: created.id, token: data.token });
+    } catch {
+      setError("Could not regenerate the token.");
+    }
+    setSaving(false);
+  }
+
+  const justCreated = !existing && created;
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{existing ? "Configure" : justCreated ? "Set up" : "Connect"} Wazuh</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {!justCreated && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Your on-prem Wazuh manager pushes alerts to Masar. Masar never connects into your network.
+              </p>
+              <div className="space-y-1">
+                <Label>Integration Name</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Wazuh SIEM" />
+              </div>
+              <div className="space-y-1">
+                <Label>Minimum alert level</Label>
+                <select
+                  value={minLevel}
+                  onChange={e => setMinLevel(Number(e.target.value))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  {WAZUH_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Alerts below this Wazuh rule level are ignored. Keep it the same as &lt;level&gt; in ossec.conf.</p>
+              </div>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" checked={importVulns} onChange={e => setImportVulns(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+                <span>
+                  Import vulnerabilities into Vulnerability Management
+                  <span className="block text-xs text-muted-foreground">Findings are closed automatically when Wazuh reports them solved.</span>
+                </span>
+              </label>
+            </>
+          )}
+
+          {created && (
+            <WazuhSetupSteps integrationId={created.id} token={created.token} minLevel={minLevel} importVulnerabilities={importVulns} />
+          )}
+
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        </div>
+
+        <DialogFooter className="gap-2">
+          {created && (
+            <Button variant="outline" onClick={handleRegenerate} disabled={saving}>
+              <KeyRound className="h-4 w-4 mr-2" />
+              Regenerate token
+            </Button>
+          )}
+          {justCreated ? (
+            <Button onClick={onClose}>Done</Button>
+          ) : (
+            <Button onClick={handleSave} disabled={saving || !name.trim()}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {existing ? "Save Changes" : "Create"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Coming-soon card ──────────────────────────────────────────────────────────
 
 function ComingSoonCard({ icon: Icon, name, description }: { icon: React.ElementType; name: string; description: string }) {
@@ -418,6 +619,14 @@ export default function IntegrationsPage() {
     return 1;
   }
 
+  function logSourceLabel(i: Integration): string {
+    if (i.type === "WAZUH") {
+      const cfg = i.config as { minLevel?: number } | null;
+      return `Alerts level ${cfg?.minLevel ?? 7}+`;
+    }
+    return `${logSourceCount(i)} selected`;
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -477,7 +686,7 @@ export default function IntegrationsPage() {
                       <p className="text-lg font-semibold">{integration.eventCount.toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Last sync</p>
+                      <p className="text-xs text-muted-foreground">{PUSH_TYPES.has(integration.type) ? "Last alert" : "Last sync"}</p>
                       <p className="text-sm font-medium">{fmtTime(integration.lastSyncAt)}</p>
                     </div>
                     <div>
@@ -486,7 +695,7 @@ export default function IntegrationsPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Log sources</p>
-                      <p className="text-sm font-medium">{logSourceCount(integration)} selected</p>
+                      <p className="text-sm font-medium">{logSourceLabel(integration)}</p>
                     </div>
                   </div>
                   {integration.lastSyncError && (
@@ -497,11 +706,13 @@ export default function IntegrationsPage() {
                   )}
                 </CardContent>
                 <div className="flex gap-2 border-t px-6 py-4">
-                  <Button size="sm" onClick={() => handleSync(integration.id)} disabled={syncing[integration.id] || !integration.enabled}>
-                    {syncing[integration.id]
-                      ? <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />Syncing…</>
-                      : <><RefreshCw className="h-3 w-3 mr-1.5" />Sync Now</>}
-                  </Button>
+                  {!PUSH_TYPES.has(integration.type) && (
+                    <Button size="sm" onClick={() => handleSync(integration.id)} disabled={syncing[integration.id] || !integration.enabled}>
+                      {syncing[integration.id]
+                        ? <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />Syncing…</>
+                        : <><RefreshCw className="h-3 w-3 mr-1.5" />Sync Now</>}
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => setDialog({ type: integration.type, existing: integration })}>
                     <Settings className="h-3 w-3 mr-1.5" />
                     Configure
@@ -522,7 +733,7 @@ export default function IntegrationsPage() {
             </div>
             <h3 className="font-semibold">No integrations connected</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-              Connect Microsoft 365 or Sophos Central to start streaming audit events into your Security Event Log.
+              Connect Microsoft 365, Sophos Central or Wazuh to start streaming audit events into your Security Event Log.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {PROVIDERS.map(p => (
@@ -575,6 +786,12 @@ export default function IntegrationsPage() {
       />
       <SophosConfigDialog
         open={dialog?.type === "SOPHOS"}
+        onClose={() => setDialog(null)}
+        existing={dialog?.existing ?? null}
+        onSaved={load}
+      />
+      <WazuhConfigDialog
+        open={dialog?.type === "WAZUH"}
         onClose={() => setDialog(null)}
         existing={dialog?.existing ?? null}
         onSaved={load}

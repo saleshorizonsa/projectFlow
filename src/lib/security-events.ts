@@ -40,6 +40,45 @@ export async function logSecurityEvent(input: SecurityEventInput): Promise<void>
   }
 }
 
+/**
+ * Bulk variant for push integrations (e.g. the Wazuh webhook): inserts all events in
+ * one query, then evaluates alert rules once per distinct (type, company) and AWAITS
+ * that work so it finishes before the serverless response is returned.
+ * Returns the number of events written (0 on failure — never throws).
+ */
+export async function logSecurityEventsBatch(inputs: SecurityEventInput[]): Promise<number> {
+  if (inputs.length === 0) return 0;
+  let written = 0;
+  try {
+    const res = await getPrisma().securityEvent.createMany({
+      data: inputs.map((input) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        type: input.type as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        severity: (input.severity ?? deriveSeverity(input.type)) as any,
+        actor: input.actor ?? null,
+        actorIp: input.actorIp ?? null,
+        resource: input.resource ?? null,
+        resourceId: input.resourceId ?? null,
+        description: input.description,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata: (input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined) as any,
+        mitreTactic: input.mitreTactic ?? null,
+        companyId: input.companyId ?? null,
+      })),
+    });
+    written = res.count;
+  } catch {
+    return 0;
+  }
+  const keys = new Map<string, { type: string; companyId?: string }>();
+  for (const i of inputs) keys.set(`${i.type}|${i.companyId ?? ""}`, { type: i.type, companyId: i.companyId });
+  for (const k of keys.values()) {
+    await processAlertRules(k.type, k.companyId).catch(() => {});
+  }
+  return written;
+}
+
 function deriveSeverity(type: string): string {
   if (["LOGIN_LOCKOUT", "SUSPICIOUS_ACTIVITY", "INCIDENT_ESCALATED", "VULNERABILITY_ESCALATED"].includes(type))
     return "HIGH";

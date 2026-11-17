@@ -208,7 +208,7 @@ export default function CompliancePage() {
       if (res.ok) {
         window.alert(
           data.linked > 0 || data.updated > 0
-            ? `Microsoft 365 SIEM attached as evidence to ${data.controls.join(", ")} (${data.linked} new, ${data.updated} updated). Review each control and set its status.`
+            ? `${(data.sources ?? ["SIEM"]).join(" and ")} attached as evidence to ${data.controls.join(", ")} (${data.linked} new, ${data.updated} updated). Review each control and set its status.`
             : (data.message ?? "No SIEM evidence to link."),
         );
         load();
