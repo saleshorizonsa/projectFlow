@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import { getPrisma } from "@/lib/prisma";
+import { BRAND } from "@/lib/brand";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -207,7 +208,7 @@ async function buildPdf(employee: EmployeeForPdf, photoBuffer: Buffer | null): P
     // Footer
     const pageHeight = doc.page.height;
     doc.fillColor(AMBER).fontSize(7).font("Helvetica")
-      .text("JASCOMiyaar · By Horizon Business Solutions Est. · Confidential", 50, pageHeight - 40, { align: "center", width: W });
+      .text(`${BRAND.name} · By ${BRAND.vendor} · Confidential`, 50, pageHeight - 40, { align: "center", width: W });
 
     doc.end();
   });

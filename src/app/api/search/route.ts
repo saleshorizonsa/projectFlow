@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { getDisabledModules } from "@/lib/modules";
+import { isPathAllowed } from "@/lib/navigation";
 import { requireRole } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-  await requireRole("VIEWER");
+  const session = await requireRole("VIEWER");
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) return NextResponse.json({ results: [] });
@@ -114,5 +116,7 @@ export async function GET(request: Request) {
     })),
   ];
 
-  return NextResponse.json({ results });
+  // Hide results from sections that are switched off or above the user's role.
+  const access = { role: session.user.role ?? "VIEWER", disabledModules: await getDisabledModules() };
+  return NextResponse.json({ results: results.filter((result) => isPathAllowed(result.href.split("?")[0], access)) });
 }

@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { LoginSlider } from "@/components/auth/login-slider";
+import { BRAND } from "@/lib/brand";
 
 export default function LoginPage() {
   return (
@@ -13,8 +14,8 @@ export default function LoginPage() {
 
         {/* Mobile brand (hidden on desktop) */}
         <div className="mb-8 text-center lg:hidden">
-          <div className="text-xl font-bold">JASCOMiyaar</div>
-          <div className="text-xs text-muted-foreground">By Horizon Business Solutions Est.</div>
+          <div className="text-xl font-bold">{BRAND.name}</div>
+          <div className="text-xs text-muted-foreground">{BRAND.tagline}</div>
         </div>
 
         <div className="w-full max-w-sm space-y-7">
@@ -23,7 +24,7 @@ export default function LoginPage() {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sign in to your JASCOMiyaar workspace
+              Sign in to your {BRAND.name} workspace
             </p>
           </div>
 
@@ -42,7 +43,7 @@ export default function LoginPage() {
               acceptable use and data governance policies.
             </p>
             <p className="text-xs font-medium text-muted-foreground">
-              © {new Date().getFullYear()} Horizon Business Solutions Est.
+              © {new Date().getFullYear()} {BRAND.vendor}
             </p>
           </div>
         </div>

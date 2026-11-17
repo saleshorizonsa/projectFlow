@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 
 const INTERVAL = 5000;
 
@@ -104,9 +105,9 @@ export function LoginSlider() {
 
       {/* ── Logo ── */}
       <div className="relative z-10 p-10">
-        <div className="text-xl font-bold tracking-tight text-white">JASCOMiyaar</div>
+        <div className="text-xl font-bold tracking-tight text-white">{BRAND.name}</div>
         <div className="text-xs mt-0.5" style={{ color: "rgba(148,163,184,0.55)" }}>
-          By Horizon Business Solutions Est.
+          {BRAND.tagline}
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { runAutomationEngine } from "@/lib/automation-engine";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { formatEnum } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 export default async function AutomationPage() {
   const session = await auth();
@@ -54,7 +55,7 @@ export default async function AutomationPage() {
         <Card>
           <CardHeader>
             <CardTitle>Automation Rules</CardTitle>
-            <CardDescription>Rules currently active in JASCOMiyaar.</CardDescription>
+            <CardDescription>Rules currently active in {BRAND.name}.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {results.map((result) => (

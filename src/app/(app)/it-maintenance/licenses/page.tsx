@@ -73,6 +73,7 @@ export default async function ITLicensesPage({ searchParams }: { searchParams?: 
           <div className="flex flex-col gap-2 sm:flex-row">
             {session?.user.role !== "VIEWER" && <CsvImportDialog type="license" />}
             <Button asChild variant="outline"><Link href="/it-maintenance/licenses/renewals">Renewal Risks</Link></Button>
+            {session?.user.role !== "VIEWER" && <Button asChild><Link href="/it-maintenance/licenses/new">Add License</Link></Button>}
           </div>
         </CardHeader>
       </Card>

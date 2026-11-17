@@ -1498,3 +1498,12 @@ model Integration {
   @@index([type])
   @@index([enabled])
 }
+
+// ── App settings (per-deployment configuration, e.g. module on/off) ──────────
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
