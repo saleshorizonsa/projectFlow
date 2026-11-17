@@ -33,6 +33,20 @@ export async function saveDisabledModules(disabledModules: ModuleKey[], userId?:
   });
 }
 
+// Same DDL as migration 20261117090000_add_app_settings. Vercel builds don't run
+// migrations, so admins can create the table from Settings → Modules instead.
+const CREATE_APP_SETTING_TABLE = `CREATE TABLE IF NOT EXISTS "AppSetting" (
+    "key" TEXT NOT NULL,
+    "value" JSONB NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedBy" TEXT,
+    CONSTRAINT "AppSetting_pkey" PRIMARY KEY ("key")
+)`;
+
+export async function ensureModuleStorage() {
+  await getPrisma().$executeRawUnsafe(CREATE_APP_SETTING_TABLE);
+}
+
 /** Redirects to the dashboard when a section is switched off or above the user's role. */
 export async function guardSection(href: string) {
   const session = await auth();
