@@ -3,7 +3,7 @@
  *
  * The Wazuh manager is on-prem and is never exposed to the internet. Instead, the
  * manager's integratord runs `integrations/wazuh/custom-masar.py`, which POSTs each
- * matching alert (JSON) to POST /api/integrations/wazuh/<integrationId>/alerts with
+ * matching alert (JSON) to POST /api/wazuh/<integrationId>/alerts with
  * "Authorization: Bearer <token>".
  *
  * This module is PURE (no DB / no Prisma runtime imports) so the mapping logic can be

@@ -50,33 +50,49 @@ export async function logSecurityEventsBatch(inputs: SecurityEventInput[]): Prom
   if (inputs.length === 0) return 0;
   let written = 0;
   try {
-    const res = await getPrisma().securityEvent.createMany({
-      data: inputs.map((input) => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        type: input.type as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        severity: (input.severity ?? deriveSeverity(input.type)) as any,
-        actor: input.actor ?? null,
-        actorIp: input.actorIp ?? null,
-        resource: input.resource ?? null,
-        resourceId: input.resourceId ?? null,
-        description: input.description,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: (input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined) as any,
-        mitreTactic: input.mitreTactic ?? null,
-        companyId: input.companyId ?? null,
-      })),
-    });
-    written = res.count;
+    written = await insertSecurityEvents(getPrisma(), inputs);
   } catch {
     return 0;
   }
+  await runAlertRulesForEvents(inputs);
+  return written;
+}
+
+type SecurityEventWriter = Pick<ReturnType<typeof getPrisma>, "securityEvent">;
+
+/**
+ * Inserts events with the given client or transaction client and returns the count.
+ * Throws on failure. Does NOT run alert rules: call runAlertRulesForEvents after commit.
+ */
+export async function insertSecurityEvents(db: SecurityEventWriter, inputs: SecurityEventInput[]): Promise<number> {
+  if (inputs.length === 0) return 0;
+  const res = await db.securityEvent.createMany({
+    data: inputs.map((input) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type: input.type as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      severity: (input.severity ?? deriveSeverity(input.type)) as any,
+      actor: input.actor ?? null,
+      actorIp: input.actorIp ?? null,
+      resource: input.resource ?? null,
+      resourceId: input.resourceId ?? null,
+      description: input.description,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      metadata: (input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined) as any,
+      mitreTactic: input.mitreTactic ?? null,
+      companyId: input.companyId ?? null,
+    })),
+  });
+  return res.count;
+}
+
+/** Evaluates alert rules once per distinct (type, company) in the given events. Never throws. */
+export async function runAlertRulesForEvents(inputs: SecurityEventInput[]): Promise<void> {
   const keys = new Map<string, { type: string; companyId?: string }>();
   for (const i of inputs) keys.set(`${i.type}|${i.companyId ?? ""}`, { type: i.type, companyId: i.companyId });
   for (const k of keys.values()) {
     await processAlertRules(k.type, k.companyId).catch(() => {});
   }
-  return written;
 }
 
 function deriveSeverity(type: string): string {
