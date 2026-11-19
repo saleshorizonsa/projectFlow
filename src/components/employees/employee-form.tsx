@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { employeeSchema } from "@/lib/validators";
@@ -98,7 +99,7 @@ export function EmployeeForm({ companies }: { companies: CompanyOption[] }) {
           </div>
           <Field label="IP Address" id="ipAddress"><Input id="ipAddress" placeholder="192.168.1.x" {...form.register("ipAddress")} /></Field>
           <Field label="VPN User ID" id="vpnUserId"><Input id="vpnUserId" {...form.register("vpnUserId")} /></Field>
-          <Field label="VPN Password" id="vpnPassword"><Input id="vpnPassword" type="password" {...form.register("vpnPassword")} /></Field>
+          <Field label="VPN Password" id="vpnPassword"><PasswordInput id="vpnPassword" {...form.register("vpnPassword")} /></Field>
 
           <div className="space-y-3 md:col-span-2 xl:col-span-4">
             <Label>Companies</Label>

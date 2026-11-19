@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { teamMemberSchema } from "@/lib/validators";
@@ -83,7 +84,7 @@ export function TeamForm({ companies }: { companies: CompanyOption[] }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Initial Password</Label>
-            <Input id="password" type="password" {...form.register("password")} />
+            <PasswordInput id="password" {...form.register("password")} />
           </div>
           <div className="space-y-2">
             <Label>Role</Label>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle2, Clock, Cloud, Loader2, Plug, RefreshCw, Settings, Shield, Trash2, Wifi, WifiOff } from "lucide-react";
 
@@ -159,7 +160,7 @@ function O365ConfigDialog({ open, onClose, existing, onSaved }: ConfigDialogProp
           </div>
           <div className="space-y-1">
             <Label>Client Secret {existing && <span className="text-muted-foreground text-xs">(leave blank to keep existing)</span>}</Label>
-            <Input value={clientSecret} onChange={e => setClientSecret(e.target.value)} type="password" placeholder={existing ? "••••••••••••••••" : "Enter client secret"} />
+            <PasswordInput value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder={existing ? "••••••••••••••••" : "Enter client secret"} />
           </div>
 
           <div className="space-y-2">
@@ -288,7 +289,7 @@ function SophosConfigDialog({ open, onClose, existing, onSaved }: ConfigDialogPr
           </div>
           <div className="space-y-1">
             <Label>Client Secret {existing && <span className="text-muted-foreground text-xs">(leave blank to keep existing)</span>}</Label>
-            <Input value={clientSecret} onChange={e => setClientSecret(e.target.value)} type="password" placeholder={existing ? "••••••••••••••••" : "Enter client secret"} />
+            <PasswordInput value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder={existing ? "••••••••••••••••" : "Enter client secret"} />
           </div>
           <div className="space-y-1">
             <Label>Minimum Severity</Label>
