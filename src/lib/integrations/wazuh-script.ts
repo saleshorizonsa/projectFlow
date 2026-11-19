@@ -14,6 +14,8 @@ export const WAZUH_SCRIPT = String.raw`#!/var/ossec/framework/python/bin/python3
 # Called by wazuh-integratord: custom-masar <alert_file> <api_key> <hook_url> [debug]
 
 import json
+import os
+import ssl
 import sys
 import time
 import urllib.error
@@ -22,6 +24,31 @@ import urllib.request
 LOG_FILE = "/var/ossec/logs/integrations.log"
 TIMEOUT_SECONDS = 10
 RETRIES = 2
+
+# Wazuh's bundled Python looks for CA certificates under /usr/local/ssl, which usually
+# doesn't exist, so every HTTPS request fails with CERTIFICATE_VERIFY_FAILED. Also load
+# the operating system's CA bundle. Certificate verification stays on.
+SYSTEM_CA_BUNDLES = (
+    "/etc/ssl/certs/ca-certificates.crt",  # Debian, Ubuntu
+    "/etc/pki/tls/certs/ca-bundle.crt",  # RHEL, CentOS, Rocky, Amazon Linux
+    "/etc/ssl/ca-bundle.pem",  # SUSE
+    "/etc/ssl/cert.pem",  # Alpine, others
+)
+
+
+def make_ssl_context():
+    context = ssl.create_default_context()
+    for path in SYSTEM_CA_BUNDLES:
+        if os.path.isfile(path):
+            try:
+                context.load_verify_locations(cafile=path)
+                break
+            except Exception:
+                continue
+    return context
+
+
+SSL_CONTEXT = make_ssl_context()
 
 
 def log(message):
@@ -58,7 +85,7 @@ def send(alert, api_key, hook_url):
     last_error = None
     for attempt in range(RETRIES + 1):
         try:
-            with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+            with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS, context=SSL_CONTEXT) as response:
                 return response.status
         except urllib.error.HTTPError as error:
             # 4xx means the request itself is wrong (bad token, bad data): don't retry.
