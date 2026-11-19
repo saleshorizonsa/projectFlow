@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { ShieldCheck, ShieldOff, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -199,8 +200,7 @@ export function MfaSetup({ mfaEnabled: initialEnabled }: Props) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <form onSubmit={handleDisable} className="space-y-3 pt-1">
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Current password"
               value={disablePassword}
               onChange={(e) => setDisablePassword(e.target.value)}

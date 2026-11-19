@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -502,9 +503,8 @@ function UserFormDialog({
                 "New Password (leave blank to keep current)"
               )}
             </Label>
-            <Input
+            <PasswordInput
               id="u-pw"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-8 text-sm"

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -176,7 +177,7 @@ function TeamEditDialog({ user, companies }: { user: TeamRow; companies: Company
           <Field label="Name" id="name"><Input id="name" name="name" defaultValue={user.name} /></Field>
           <Field label="Email" id="email"><Input id="email" name="email" type="email" defaultValue={user.email} /></Field>
           <Field label="WhatsApp Phone" id="phone"><Input id="phone" name="phone" placeholder="+966..." defaultValue={user.phone ?? ""} /></Field>
-          <Field label="New Password" id="password"><Input id="password" name="password" type="password" placeholder="Leave blank to keep current password" /></Field>
+          <Field label="New Password" id="password"><PasswordInput id="password" name="password" placeholder="Leave blank to keep current password" /></Field>
           <div className="space-y-2">
             <Label>Role</Label>
             <Select value={role} onValueChange={setRole}>
